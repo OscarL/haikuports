@@ -27,14 +27,14 @@ PROVIDES="
 	"
 REQUIRES="
 	haiku$secondaryArchSuffix
+	lib:libedit$secondaryArchSuffix
 	lib:libncursesw$secondaryArchSuffix
-	lib:libreadline$secondaryArchSuffix
 	"
 
 BUILD_REQUIRES="
 	haiku${secondaryArchSuffix}_devel
+	devel:libedit$secondaryArchSuffix
 	devel:libncursesw$secondaryArchSuffix
-	devel:libreadline$secondaryArchSuffix
 	"
 BUILD_PREREQUIRES="
 	cmd:aclocal

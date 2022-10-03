@@ -1,4 +1,4 @@
-From 4b5cdd73ba59aed4ecbd6cfcff56edec73e01624 Mon Sep 17 00:00:00 2001
+From 97298787761899d19b5d574345cc1d2a4748cd1f Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Zolt=C3=A1n=20Mizsei?= <zmizsei@extrowerk.com>
 Date: Sat, 27 Oct 2018 12:51:57 +0200
 Subject: Haiku supporting patches
@@ -68,7 +68,7 @@ index 8a50ab9..de92e58 100644
 2.37.3
 
 
-From d2c81bf97bfce27b2baa764f91ffef4097dbb729 Mon Sep 17 00:00:00 2001
+From c8bd11b8939a0712971abce80f4878877826dfce Mon Sep 17 00:00:00 2001
 From: Oscar Lesta <oscar.lesta@gmail.com>
 Date: Mon, 3 Oct 2022 06:59:40 -0300
 Subject: Updated Haiku support patch.
@@ -99,7 +99,7 @@ index eb5c80a..15c0b60 100644
 2.37.3
 
 
-From 5af8c31ff4012a93814580994478b66302dfeae8 Mon Sep 17 00:00:00 2001
+From ec2b8adcafa724b9ca976b13acb7ad395587f76e Mon Sep 17 00:00:00 2001
 From: Oscar Lesta <oscar.lesta@gmail.com>
 Date: Mon, 3 Oct 2022 07:04:35 -0300
 Subject: No dotfiles on Haiku
@@ -132,6 +132,140 @@ index f715672..adffc64 100644
  
  #define ZSH_HISTORY_EXT_DIGITS 10
  
+-- 
+2.37.3
+
+
+From 655cc05622c63b629549062d6d7fd633d05ae69d Mon Sep 17 00:00:00 2001
+From: Oscar Lesta <oscar.lesta@gmail.com>
+Date: Mon, 3 Oct 2022 09:10:07 -0300
+Subject: Build with editline instead of readline.
+
+
+diff --git a/PKGBUILD b/PKGBUILD
+index 9b65ae0..d7af7fc 100644
+--- a/PKGBUILD
++++ b/PKGBUILD
+@@ -10,7 +10,8 @@ pkgdesc="A command line utility that brings improved BASH command completion fro
+ arch=('any')
+ url="https://github.com/dvorka/hstr"
+ license=('Apache')
+-makedepends=('autoconf' 'automake' 'ncurses' 'readline')
++# makedepends=('autoconf' 'automake' 'ncurses' 'readline')
++makedepends=('autoconf' 'automake' 'ncurses' 'edit')
+ source=(${pkgname}-${pkgver}.tar.gz::https://github.com/dvorka/${pkgname}/archive/${pkgver}.tar.gz)
+ sha256sums=('886531ca9d8d1a5a93a3db96e9fc64154a03f6de428c74c722b41057bceca266')
+ 
+diff --git a/configure.ac b/configure.ac
+index 775c795..a969f55 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -84,7 +84,8 @@ AC_CHECK_LIB(ncursesw, killwchar, [],
+ 
+ # Checks for libraries.
+ AC_CHECK_LIB(m, cos, [], [AC_MSG_ERROR([Could not find m library])])
+-AC_CHECK_LIB(readline, using_history, [], [AC_MSG_ERROR([Could not find readline library])])
++# AC_CHECK_LIB(readline, using_history, [], [AC_MSG_ERROR([Could not find readline library])])
++AC_CHECK_LIB(edit, using_history, [], [AC_MSG_ERROR([Could not find libedit library])])
+ # ncurses might be linked in libtinfo
+ #AC_CHECK_LIB(tinfo, keypad, [], [AC_MSG_ERROR([Could not find tinfo library])])
+ 
+@@ -95,7 +96,8 @@ AC_CHECK_HEADER(fcntl.h)
+ AC_CHECK_HEADER(getopt.h)
+ AC_CHECK_HEADER(locale.h)
+ AC_CHECK_HEADER(math.h)
+-AC_CHECK_HEADER(readline/history.h)
++# AC_CHECK_HEADER(readline/history.h)
++AC_CHECK_HEADER(histedit.h)
+ AC_CHECK_HEADER(regex.h)
+ AC_CHECK_HEADER(signal.h)
+ AC_CHECK_HEADER(stdbool.h)
+diff --git a/src/include/hstr.h b/src/include/hstr.h
+index be248d3..c6bd406 100644
+--- a/src/include/hstr.h
++++ b/src/include/hstr.h
+@@ -30,7 +30,9 @@
+ #else
+   #include <ncursesw/curses.h>
+ #endif
+-#include <readline/chardefs.h>
++#ifndef defined(__HAIKU__)
++  #include <readline/chardefs.h>
++#endif
+ #include <signal.h>
+ #include <termios.h>
+ #include <wchar.h>
+diff --git a/src/include/hstr_history.h b/src/include/hstr_history.h
+index adffc64..1679caf 100644
+--- a/src/include/hstr_history.h
++++ b/src/include/hstr_history.h
+@@ -23,7 +23,11 @@
+ #include <limits.h>
+ // do NOT remove stdio.h include - must be present on certain system before readline to compile
+ #include <stdio.h>
+-#include <readline/history.h>
++#if defined(__HAIKU__)
++  #include <histedit.h>
++#else
++  #include <readline/history.h>
++#endif
+ 
+ #include "hstr_utils.h"
+ #include "hstr_regexp.h"
+diff --git a/test/hstr-unit-tests.pro b/test/hstr-unit-tests.pro
+index d7e5d3f..dec8eee 100644
+--- a/test/hstr-unit-tests.pro
++++ b/test/hstr-unit-tests.pro
+@@ -24,7 +24,8 @@ QMAKE_CFLAGS += -DHSTR_TESTS_UNIT
+ INCLUDEPATH += unity/src/c
+ 
+ # -L for where to look for library, -l for linking the library
+-LIBS += -lm -lreadline -lncursesw -ltinfo
++# LIBS += -lm -lreadline -lncursesw -ltinfo
++LIBS += -lm -leditline -lncursesw -ltinfo
+ 
+ SOURCES += \
+     ../src/hashset.c \
+diff --git a/test/src/test_keyb.c b/test/src/test_keyb.c
+index a8e0131..6935f3a 100644
+--- a/test/src/test_keyb.c
++++ b/test/src/test_keyb.c
+@@ -17,8 +17,13 @@
+ */
+ 
+ #include <stdio.h>
+-#include <readline/readline.h>
+-#include <readline/chardefs.h>
++#ifdef defined(__HAIKU__)
++  #include <editline/readline.h>
++#else
++  #include <readline/readline.h>
++  #include <readline/chardefs.h>>
++#endif
++
+ 
+ // $ xev
+ //   ... get keycodes
+diff --git a/test/src/test_utf8.c b/test/src/test_utf8.c
+index f7c7e1f..5253597 100644
+--- a/test/src/test_utf8.c
++++ b/test/src/test_utf8.c
+@@ -27,8 +27,13 @@
+ #else
+ #include <ncursesw/curses.h>
+ #endif
+-#include <readline/readline.h>
+-#include <readline/chardefs.h>
++#ifdef defined(__HAIKU__)
++  #include <editline/readline.h>
++#else
++  #include <readline/readline.h>
++  #include <readline/chardefs.h>>
++#endif
++
+ 
+ #define BITS_IN_BYTE 8
+ #define INTEGRAL_TYPE char
 -- 
 2.37.3
 
