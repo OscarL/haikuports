@@ -6,14 +6,14 @@ Linux system.
 This package contains the VirtualBox kernel modules and user-space \
 tools for Haiku guests."
 HOMEPAGE="https://www.virtualbox.org/"
-COPYRIGHT="2003-2017 Oracle Corporation"
+COPYRIGHT="2003-2022 Oracle Corporation"
 LICENSE="
 	GNU GPL v2
 	CDDL v1
 	"
 REVISION="1"
 SOURCE_URI="http://download.virtualbox.org/virtualbox/$portVersion/VirtualBox-$portVersion.tar.bz2"
-CHECKSUM_SHA256="0212602eea878d6c9fd7f4a3e0182da3e4505f31d25f5539fb8f7b1fbe366195"
+CHECKSUM_SHA256="bc857555d3e836ad9350a8f7b03bb54d2fdc04dddb2043d09813f4634bca4814"
 SOURCE_DIR="VirtualBox-$portVersion"
 PATCHES="virtualbox_guest_additions-$portVersion.patchset"
 
@@ -43,7 +43,7 @@ BUILD_REQUIRES="
 BUILD_PREREQUIRES="
 	cmd:gcc$secondaryArchSuffix
 	cmd:grep
-	cmd:kmk$secondaryArchSuffix
+	cmd:kmk$secondaryArchSuffix >= 0.1.9998svn3572
 	cmd:ld$secondaryArchSuffix
 	cmd:mkisofs
 	cmd:sed

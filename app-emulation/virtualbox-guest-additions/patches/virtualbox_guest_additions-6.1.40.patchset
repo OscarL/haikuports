@@ -1,14 +1,20 @@
-From e690565c6c0244c03f8e947c75b2e1ae50022bfd Mon Sep 17 00:00:00 2001
-From: Craig Watson <watsoncraigjohn@gmail.com>
-Date: Mon, 20 Sep 2021 10:51:35 +0100
+From 8f08d02386d2d201a44ce8b344bb6632965f3c44 Mon Sep 17 00:00:00 2001
+From: Oscar Lesta <oscar.lesta@gmail.com>
+Date: Wed, 7 Dec 2022 14:05:36 -0300
 Subject: Fixes for Haiku
 
+Minor rework of Craig Watson <watsoncraigjohn@gmail.com> patch for
+virtualbox_guest_additions-6.1.26:
+
+- tabs vs spaces cleanup.
+- removal of unneded modifications (addition/removal of empty lines).
+- made the Config.kmk and VBoxGuestR0LibPhysHeap.cpp changes apply cleanly.
 
 diff --git a/Config.kmk b/Config.kmk
-index ee61f76..07e08ec 100644
+index 5bcc4aa..8292cbe 100644
 --- a/Config.kmk
 +++ b/Config.kmk
-@@ -2054,8 +2054,6 @@ ifeq ($(VBOX_XSLTPROC),)
+@@ -2062,8 +2062,6 @@ ifeq ($(VBOX_XSLTPROC),)
    endif
   else ifeq ($(KBUILD_HOST),os2)
    VBOX_XSLTPROC  := BEGINLIBPATH="$(KBUILD_DEVTOOLS_HST)/bin;$$BEGINLIBPATH" $(KBUILD_DEVTOOLS_HST)/bin/xsltproc.exe
@@ -17,7 +23,7 @@ index ee61f76..07e08ec 100644
   else
    VBOX_XSLTPROC  := xsltproc$(HOSTSUFF_EXE)
   endif
-@@ -2833,7 +2831,7 @@ endif
+@@ -2842,7 +2840,7 @@ endif
  	$(QUIET)$(APPEND) '$@' '  VBOX_GCC_fvisibility-hidden  ?= $(call VBOX_GCC_CHECK_CC,-fvisibility=hidden -DVBOX_HAVE_VISIBILITY_HIDDEN -DRT_USE_VISIBILITY_DEFAULT,)'
  	$(QUIET)$(APPEND) '$@' ' endif'
  	$(QUIET)$(APPEND) '$@' 'endif'
@@ -26,7 +32,7 @@ index ee61f76..07e08ec 100644
  # Set default attribute for inline functions to ``hidden'' to reduce the number
  # of relocation entries and PLT indirections in shared libraries. Don't allow for gcc version < 4.
  	$(QUIET)$(APPEND) '$@' 'ifneq ($$(VBOX_GCC_VERSION_CXX),)'
-@@ -4347,7 +4345,7 @@ ifdef VBOX_WITH_RAW_MODE
+@@ -4441,7 +4439,7 @@ ifdef VBOX_WITH_RAW_MODE
  
   ifeq ($(VBOX_LDR_FMT32),elf)
   TEMPLATE_VBoxRc_TOOL                = $(VBOX_GCC32_TOOL)
@@ -35,16 +41,16 @@ index ee61f76..07e08ec 100644
   TEMPLATE_VBoxRc_CFLAGS              = -fno-pie -nostdinc -g $(VBOX_GCC_pipe) $(VBOX_GCC_WERR) $(VBOX_GCC_PEDANTIC_C)   $(VBOX_GCC32_Wno-variadic-macros) -fno-exceptions $(VBOX_GCC_GC_OPT) $(VBOX_GCC_GC_FP) -mno-sse -mno-mmx -mno-sse2 -mno-3dnow -fno-strict-aliasing $(VBOX_GCC_fno-stack-protector) $(VBOX_GCC_fvisibility-hidden) $(VBOX_GCC_IPRT_FMT_CHECK)
    if $(VBOX_GCC32_VERSION_CC) < 30400
     TEMPLATE_VBoxRc_DEFS             += RT_WITHOUT_PRAGMA_ONCE
-@@ -4500,7 +4498,7 @@ TEMPLATE_VBoxR0_CFLAGS              = -fno-pie -nostdinc -g $(VBOX_GCC_pipe) $(V
- TEMPLATE_VBoxR0_CXXFLAGS            = -fno-pie -nostdinc -g $(VBOX_GCC_pipe) $(VBOX_GCC_WERR) $(VBOX_GCC_PEDANTIC_CXX) \
+@@ -4595,6 +4593,7 @@ TEMPLATE_VBoxR0_CXXFLAGS            = -fno-pie -nostdinc -g $(VBOX_GCC_pipe) $(V
  	$(VBOX_GCC_Wno-variadic-macros) $(VBOX_GCC_R0_OPT) $(VBOX_GCC_R0_FP) -fno-strict-aliasing -fno-exceptions \
  	$(VBOX_GCC_fno-stack-protector) -fno-common $(VBOX_GCC_fvisibility-inlines-hidden) $(VBOX_GCC_fvisibility-hidden) \
--	-fno-rtti $(VBOX_GCC_IPRT_FMT_CHECK)
+- 	-fno-rtti $(VBOX_GCC_IPRT_FMT_CHECK)
++ 	-fno-rtti $(VBOX_GCC_IPRT_FMT_CHECK) \
 +	$(VBOX_GCC_IPRT_FMT_CHECK)
- TEMPLATE_VBoxR0_CFLAGS.amd64        = -m64 -mno-red-zone -mno-sse -mno-mmx -mno-sse2 -mno-3dnow -fasynchronous-unwind-tables -ffreestanding
- TEMPLATE_VBoxR0_CXXFLAGS.amd64      = -m64 -mno-red-zone -mno-sse -mno-mmx -mno-sse2 -mno-3dnow -fasynchronous-unwind-tables
- TEMPLATE_VBoxR0_CXXFLAGS.freebsd    = -ffreestanding
-@@ -5028,31 +5026,31 @@ endif # NetBSD
+  if $(VBOX_GCC_VERSION_CC) >= 40500 # 4.1.2 complains, 4.5.2 is okay, didn't check which version inbetween made it okay with g++.
+ TEMPLATE_VBoxR0_CXXFLAGS           += -ffreestanding
+  endif
+@@ -5133,31 +5132,31 @@ endif # NetBSD
  
  ifeq ($(KBUILD_TARGET),haiku)
  ## The Haiku include directories
@@ -87,7 +93,7 @@ index ee61f76..07e08ec 100644
  endif # Haiku
  
  ifdef VBOX_WITH_VBOXDRV
-@@ -5187,8 +5185,7 @@ TEMPLATE_VBOXR3EXE_TOOL                = $(VBOX_GCC_TOOL)
+@@ -5293,8 +5292,7 @@ TEMPLATE_VBOXR3EXE_TOOL                = $(VBOX_GCC_TOOL)
   if $(VBOX_GCC_VERSION_CC) < 30400
  TEMPLATE_VBOXR3EXE_DEFS               += RT_WITHOUT_PRAGMA_ONCE
   endif
@@ -97,7 +103,7 @@ index ee61f76..07e08ec 100644
   ifdef VBOX_WITH_NO_GCC_WARNING_POLICY
    TEMPLATE_VBOXR3EXE_CXXFLAGS         += $(VBOX_GCC_WERR)
   endif
-@@ -5198,7 +5195,7 @@ TEMPLATE_VBOXR3EXE_CXXFLAGS.sparc32    = -m32
+@@ -5304,7 +5302,7 @@ TEMPLATE_VBOXR3EXE_CXXFLAGS.sparc32    = -m32
  TEMPLATE_VBOXR3EXE_CXXFLAGS.sparc64    = -m64
  TEMPLATE_VBOXR3EXE_CXXFLAGS.kprofile   = -finstrument-functions
  TEMPLATE_VBOXR3EXE_CXXFLAGS.debug      = $(VBOX_GCC_SANITIZER_FLAGS)
@@ -106,7 +112,7 @@ index ee61f76..07e08ec 100644
   ifdef VBOX_WITH_NO_GCC_WARNING_POLICY
    TEMPLATE_VBOXR3EXE_CFLAGS           += $(VBOX_GCC_WERR)
   endif
-@@ -5255,11 +5252,11 @@ TEMPLATE_VBOXR3EXE_TOOL                = GXX3
+@@ -5361,11 +5359,11 @@ TEMPLATE_VBOXR3EXE_TOOL                = GXX3
  TEMPLATE_VBOXR3EXE_POST_CMDS          = $(VBOX_HAIKU_XRES_SETVER_CMDS)
  TEMPLATE_VBOXR3EXE_LIBS                = network iconv stdc++ supc++
  TEMPLATE_VBOXR3EXE_LIBPATH            += \
@@ -122,7 +128,7 @@ index ee61f76..07e08ec 100644
   else if1of ($(KBUILD_TARGET), freebsd openbsd)
  TEMPLATE_VBOXR3EXE_TOOL                = GXX3
  TEMPLATE_VBOXR3EXE_LIBS                = pthread
-@@ -5318,10 +5315,10 @@ ifn1of ($(KBUILD_TARGET), darwin win os2)
+@@ -5424,10 +5422,10 @@ ifn1of ($(KBUILD_TARGET), darwin win os2)
  endif
  ifeq ($(KBUILD_TARGET),haiku)
   # Haiku uses PIC by default...
@@ -137,7 +143,7 @@ index ee61f76..07e08ec 100644
  endif
  
  #
-@@ -7133,7 +7130,7 @@ ifeq ($(KBUILD_TARGET),win)
+@@ -7242,7 +7240,7 @@ ifeq ($(KBUILD_TARGET),win)
  else # the gcc guys
   TEMPLATE_VBOXGUESTR3EXE_EXTENDS  = VBOXR3EXE
   TEMPLATE_VBOXGUESTR3EXE_TOOL    := $(subst GXX,GCC,$(TEMPLATE_VBOXR3EXE_TOOL))
@@ -146,18 +152,6 @@ index ee61f76..07e08ec 100644
   # Do not inherit sanitizer flags from VBOXR3EXE in guest executables.  Deal with them separately.
   TEMPLATE_VBOXGUESTR3EXE_CXXFLAGS.debug = $(NO_SUCH_VARIABLE)
   TEMPLATE_VBOXGUESTR3EXE_CFLAGS.debug = $(NO_SUCH_VARIABLE)
-diff --git a/src/VBox/Additions/common/VBoxGuest/Makefile.kmk b/src/VBox/Additions/common/VBoxGuest/Makefile.kmk
-index 81b488a..d71ecfb 100644
---- a/src/VBox/Additions/common/VBoxGuest/Makefile.kmk
-+++ b/src/VBox/Additions/common/VBoxGuest/Makefile.kmk
-@@ -133,6 +133,7 @@ if1of ($(KBUILD_TARGET), darwin freebsd haiku netbsd os2 solaris win)
-    VBoxDev_NAME          = vboxdev
-    VBoxDev_DEFS          = VBOX_SVN_REV=$(VBOX_SVN_REV) _KERNEL_MODE=1 VBGL_VBOXGUEST VBOX_WITH_HGCM IN_RING0
-    VBoxDev_SOURCES       = VBoxDev-haiku.c VBoxGuest-haiku-stubs.c
-+
-   endif
-  else # OS/2:
-   # The library order is crucial, so a bit of trickery is necessary.
 diff --git a/src/VBox/Additions/common/VBoxGuest/VBoxDev-haiku.c b/src/VBox/Additions/common/VBoxGuest/VBoxDev-haiku.c
 index 450898e..ab2ee5e 100644
 --- a/src/VBox/Additions/common/VBoxGuest/VBoxDev-haiku.c
@@ -308,7 +302,7 @@ index 450898e..ab2ee5e 100644
   * Driver select hook.
   *
 diff --git a/src/VBox/Additions/common/VBoxGuest/VBoxGuest-haiku-stubs.c b/src/VBox/Additions/common/VBoxGuest/VBoxGuest-haiku-stubs.c
-index 074d7af..037c004 100644
+index 074d7af..88af124 100644
 --- a/src/VBox/Additions/common/VBoxGuest/VBoxGuest-haiku-stubs.c
 +++ b/src/VBox/Additions/common/VBoxGuest/VBoxGuest-haiku-stubs.c
 @@ -63,6 +63,7 @@
@@ -366,7 +360,7 @@ index 074d7af..037c004 100644
 -
 +int RTStrCopy(char *pszDst, size_t cbDst, const char *pszSrc)
 +{
-+	return g_VBoxGuest->_RTStrCopy(pszDst, cbDst, pszSrc);	
++	return g_VBoxGuest->_RTStrCopy(pszDst, cbDst, pszSrc);
 +}
 diff --git a/src/VBox/Additions/common/VBoxGuest/VBoxGuest-haiku.c b/src/VBox/Additions/common/VBoxGuest/VBoxGuest-haiku.c
 index 0cedd51..470d963 100644
@@ -527,7 +521,7 @@ index 12d8cf0..b758e05 100644
  
  
 diff --git a/src/VBox/Additions/common/VBoxGuest/VBoxGuest.cpp b/src/VBox/Additions/common/VBoxGuest/VBoxGuest.cpp
-index f2f26e1..b279378 100644
+index 8333bbc..5138a7a 100644
 --- a/src/VBox/Additions/common/VBoxGuest/VBoxGuest.cpp
 +++ b/src/VBox/Additions/common/VBoxGuest/VBoxGuest.cpp
 @@ -78,6 +78,9 @@
@@ -585,7 +579,7 @@ index 92979d2..d8c0d9d 100644
  {
      RT_NOREF(pHandle);
 diff --git a/src/VBox/Additions/common/VBoxGuest/lib/VBoxGuestR0LibInit.cpp b/src/VBox/Additions/common/VBoxGuest/lib/VBoxGuestR0LibInit.cpp
-index a135ae6..791f5fe 100644
+index a135ae6..8a42537 100644
 --- a/src/VBox/Additions/common/VBoxGuest/lib/VBoxGuestR0LibInit.cpp
 +++ b/src/VBox/Additions/common/VBoxGuest/lib/VBoxGuestR0LibInit.cpp
 @@ -39,6 +39,11 @@
@@ -616,12 +610,12 @@ index a135ae6..791f5fe 100644
  # endif
      if (RT_SUCCESS(rc))
      {
-+    	dprintf("Acquired Driver Mutex\n");
++        dprintf("Acquired Driver Mutex\n");
          if (g_vbgldata.status == VbglStatusReady)
          { /* likely */ }
          else
          {
-+	    	dprintf("Opening Idc\n");
++            dprintf("Opening Idc\n");
              rc = VbglR0IdcOpen(&g_vbgldata.IdcHandle,
                                 VBGL_IOC_VERSION /*uReqVersion*/,
                                 VBGL_IOC_VERSION & UINT32_C(0xffff0000) /*uMinVersion*/,
@@ -629,11 +623,11 @@ index a135ae6..791f5fe 100644
                  /*
                   * Try query the port info.
                   */
-+		    	dprintf("Query Idc\n");
++                dprintf("Query Idc\n");
                  VBGLIOCGETVMMDEVIOINFO PortInfo;
                  RT_ZERO(PortInfo);
                  VBGLREQHDR_INIT(&PortInfo.Hdr, GET_VMMDEV_IO_INFO);
-+		    	dprintf("Call Idc\n");
++                dprintf("Call Idc\n");
                  rc = VbglR0IdcCall(&g_vbgldata.IdcHandle, VBGL_IOCTL_GET_VMMDEV_IO_INFO, &PortInfo.Hdr, sizeof(PortInfo));
                  if (RT_SUCCESS(rc))
                  {
@@ -643,7 +637,7 @@ index a135ae6..791f5fe 100644
                      g_vbgldata.portVMMDev    = PortInfo.u.Out.IoPort;
                      g_vbgldata.pVMMDevMemory = (VMMDevMemory *)PortInfo.u.Out.pvVmmDevMapping;
                      g_vbgldata.status        = VbglStatusReady;
-+			    	dprintf("Query Host Version\n");
++                    dprintf("Query Host Version\n");
  
                      vbglR0QueryHostVersion();
                  }
@@ -736,17 +730,17 @@ index a135ae6..791f5fe 100644
      return rc;
  }
 diff --git a/src/VBox/Additions/common/VBoxGuest/lib/VBoxGuestR0LibPhysHeap.cpp b/src/VBox/Additions/common/VBoxGuest/lib/VBoxGuestR0LibPhysHeap.cpp
-index f00e6ec..af8dbcd 100644
+index 43efa0c..c1ade10 100644
 --- a/src/VBox/Additions/common/VBoxGuest/lib/VBoxGuestR0LibPhysHeap.cpp
 +++ b/src/VBox/Additions/common/VBoxGuest/lib/VBoxGuestR0LibPhysHeap.cpp
-@@ -322,7 +322,7 @@ static VBGLPHYSHEAPBLOCK *vbglPhysHeapChunkAlloc (uint32_t cbSize)
- 
-     if (!pChunk)
-     {
--        LogRel(("vbglPhysHeapChunkAlloc: failed to alloc %u contiguous bytes.\n", cbSize));
-+        Log(("vbglPhysHeapChunkAlloc: failed to alloc %u contiguous bytes.\n", cbSize));
-         return NULL;
+@@ -342,7 +342,7 @@ static VBGLPHYSHEAPBLOCK *vbglPhysHeapChunkAlloc(uint32_t cbMinBlock)
+         VBGL_PH_dprintf(("Allocated chunk %p LB %#x, block %p LB %#x\n", pChunk, cbChunk, pBlock, pBlock->cbDataSize));
+         return pBlock;
      }
+-    LogRel(("vbglPhysHeapChunkAlloc: failed to alloc %u (%#x) contiguous bytes.\n", cbChunk, cbChunk));
++    Log(("vbglPhysHeapChunkAlloc: failed to alloc %u (%#x) contiguous bytes.\n", cbChunk, cbChunk));
+     return NULL;
+ }
  
 diff --git a/src/VBox/Additions/haiku/SharedFolders/Makefile.kmk b/src/VBox/Additions/haiku/SharedFolders/Makefile.kmk
 index 9b79a21..4369b4c 100644
@@ -1285,7 +1279,7 @@ index da9ed04..0000000
 -#endif /* !GA_INCLUDED_SRC_haiku_SharedFolders_OpenHashTable_h */
 -
 diff --git a/src/VBox/Additions/haiku/SharedFolders/lock.h b/src/VBox/Additions/haiku/SharedFolders/lock.h
-index dc65b80..a3df675 100644
+index dc65b80..7b666d1 100644
 --- a/src/VBox/Additions/haiku/SharedFolders/lock.h
 +++ b/src/VBox/Additions/haiku/SharedFolders/lock.h
 @@ -67,7 +67,7 @@ typedef struct rw_lock {
@@ -1293,12 +1287,12 @@ index dc65b80..a3df675 100644
          struct rw_lock_waiter*  waiters;
          thread_id                               holder;
 -        vint32                                  count;
-+        int32                                  count;
++        int32                                   count;
          int32                                   owner_count;
          int16                                   active_readers;
                                                                  // Only > 0 while a writer is waiting: number
 diff --git a/src/VBox/Additions/haiku/SharedFolders/vboxsf.c b/src/VBox/Additions/haiku/SharedFolders/vboxsf.c
-index 5e2b88c..ac44ffa 100644
+index 5e2b88c..3694a50 100644
 --- a/src/VBox/Additions/haiku/SharedFolders/vboxsf.c
 +++ b/src/VBox/Additions/haiku/SharedFolders/vboxsf.c
 @@ -44,6 +44,8 @@
@@ -1319,17 +1313,15 @@ index 5e2b88c..ac44ffa 100644
  
  status_t init_module(void)
  {
-@@ -97,7 +99,13 @@ status_t init_module(void)
-         dprintf("get_module(%s) failed\n", VBOXGUEST_MODULE_NAME);
+@@ -98,6 +100,12 @@ status_t init_module(void)
          return B_ERROR;
      }
--
-+    
+ 
 +    if (RT_FAILURE(RTR0Init(0)))
 +    {
 +        dprintf("RTR0Init failed\n");
 +        return B_ERROR;
-+    	
++        
 +    }
      if (RT_FAILURE(VbglR0SfInit()))
      {
@@ -1346,19 +1338,10 @@ index 5e2b88c..ac44ffa 100644
          rv->u16Length = len;
          rv->u16Size = rv->u16Length + 1;
      }
-+    
++
      return rv;
  }
  
-@@ -231,7 +239,7 @@ status_t mount(fs_volume *volume, const char *device, uint32 flags, const char *
- 
-     if (rv == 0)
-     {
--        vboxsf_vnode* root_vnode;
-+    	vboxsf_vnode* root_vnode;
- 
-         PSHFLSTRING name = make_shflstring("");
-         if (!name)
 @@ -239,8 +247,8 @@ status_t mount(fs_volume *volume, const char *device, uint32 flags, const char *
              dprintf(FS_NAME ": make_shflstring() failed\n");
              return B_NO_MEMORY;
@@ -1386,7 +1369,7 @@ index 5e2b88c..ac44ffa 100644
 -    st->st_ctime   = RTTimeSpecGetSeconds(&params.Info.BirthTime);
 +    st->st_ctime   = RTTimeSpecGetSeconds(&params.Info.ChangeTime);
 +    dprintf("sf_stat: returning B_OK\n");
-+    
++
      return B_OK;
  }
  
@@ -1411,7 +1394,7 @@ index 5e2b88c..ac44ffa 100644
          }
 -        else
 +        else {
-+        	dprintf(FS_NAME ": vboxsf_open_dir ret ENTRY NOT FOUND\n");
++            dprintf(FS_NAME ": vboxsf_open_dir ret ENTRY NOT FOUND\n");
 +
              return B_ENTRY_NOT_FOUND;
 +        }
@@ -1424,36 +1407,36 @@ index 5e2b88c..ac44ffa 100644
  
 +bool find_node_ancestor_by_ref(ino_t ref, vboxsf_vnode ** outNode)
 +{
-+	bool found = false;
-+	vboxsf_vnode * new_vnode = head;
-+	while (new_vnode != NULL)
++    bool found = false;
++    vboxsf_vnode * new_vnode = head;
++    while (new_vnode != NULL)
 +    {
-+    	if (new_vnode->int_next->vnode == ref)
-+    	{
-+    		found = true;
-+    		*outNode = new_vnode;
-+    		break;
-+    	}
-+    	new_vnode = new_vnode->int_next;
-+    }	
++        if (new_vnode->int_next->vnode == ref)
++        {
++            found = true;
++            *outNode = new_vnode;
++            break;
++        }
++        new_vnode = new_vnode->int_next;
++    }   
 +    return found;
 +}
 +
 +bool find_node_by_name(const char * path, vboxsf_vnode ** outNode)
 +{
-+	bool found = false;
-+	vboxsf_vnode * new_vnode = head;
-+	while (new_vnode != NULL)
++    bool found = false;
++    vboxsf_vnode * new_vnode = head;
++    while (new_vnode != NULL)
 +    {
-+    	dprintf("find_node_by_name %s == %s\n", path, new_vnode->path->String.utf8);
-+    	if (strcmp(new_vnode->path->String.utf8,path) == 0)
-+    	{
-+    		found = true;
-+    		*outNode = new_vnode;
-+    		break;
-+    	}
-+    	new_vnode = new_vnode->int_next;
-+    }	
++        dprintf("find_node_by_name %s == %s\n", path, new_vnode->path->String.utf8);
++        if (strcmp(new_vnode->path->String.utf8,path) == 0)
++        {
++            found = true;
++            *outNode = new_vnode;
++            break;
++        }
++        new_vnode = new_vnode->int_next;
++    }   
 +    return found;
 +}
  
@@ -1462,7 +1445,7 @@ index 5e2b88c..ac44ffa 100644
 +status_t vboxsf_read_dir_1(fs_volume* _volume, vboxsf_volume* volume, vboxsf_vnode* vnode, vboxsf_dir_cookie* cookie,
      struct dirent* buffer, size_t bufferSize)
  {
-+	dprintf(FS_NAME ": vboxsf_read_dir_1\n");
++    dprintf(FS_NAME ": vboxsf_read_dir_1\n");
 +
      dprintf("%p, %d, %p\n", cookie, cookie->has_more_files, cookie->buffer);
      if (!cookie->has_more_files)
@@ -1471,45 +1454,42 @@ index 5e2b88c..ac44ffa 100644
          dprintf(FS_NAME ": make_shflstring() failed\n");
          return B_NO_MEMORY;
      }
--
++    dprintf(FS_NAME ": vboxsf_read_dir_1 found: %s\n", name1->String.utf8);
+ 
 -    vboxsf_vnode* new_vnode;
 -    int rv = vboxsf_new_vnode(&volume->map, build_path(vnode, name1->String.utf8), name1, &new_vnode);
 -    if (rv != B_OK)
--    {
++    ino_t entry;
++
++    if (strcmp(name1->String.utf8,".")==0) 
+     {
 -        dprintf(FS_NAME ": vboxsf_new_vnode() failed\n");
 -        return rv;
--    }
++        //vnodeid is this dir
++        entry = vnode->vnode;
++    } 
++    else if (strcmp(name1->String.utf8,"..")==0)
++    {
++        //vnodeid is parent of this dir
++        entry = vnode->parentvnode;
++    } else
++    {
++        //create a new node for an actual entry
++        vboxsf_vnode* new_vnode;
++        PSHFLSTRING path = build_path(vnode, name1->String.utf8);
++        if (!find_node_by_name(path->String.utf8, &new_vnode))
++        {
++            int rv = vboxsf_new_vnode(_volume, &volume->map, path, name1, vnode->vnode, mode_from_fmode(cookie->buffer->Info.Attr.fMode), &new_vnode, false);
++            if (rv != B_OK)
++            {
++                dprintf(FS_NAME ": vboxsf_new_vnode() failed\n");
++                free(path);
++                return rv;
++            }
++        }
++        entry = new_vnode->vnode;
+     }
 -
-+	dprintf(FS_NAME ": vboxsf_read_dir_1 found: %s\n", name1->String.utf8);
-+
-+	ino_t entry;
-+
-+	if (strcmp(name1->String.utf8,".")==0) 
-+	{
-+		//vnodeid is this dir
-+		entry = vnode->vnode;
-+	} 
-+	else if (strcmp(name1->String.utf8,"..")==0)
-+	{
-+		//vnodeid is parent of this dir
-+		entry = vnode->parentvnode;
-+	} else
-+	{
-+		//create a new node for an actual entry
-+	    vboxsf_vnode* new_vnode;
-+	    PSHFLSTRING path = build_path(vnode, name1->String.utf8);
-+		if (!find_node_by_name(path->String.utf8, &new_vnode))
-+		{
-+		    int rv = vboxsf_new_vnode(_volume, &volume->map, path, name1, vnode->vnode, mode_from_fmode(cookie->buffer->Info.Attr.fMode), &new_vnode, false);
-+		    if (rv != B_OK)
-+		    {
-+		        dprintf(FS_NAME ": vboxsf_new_vnode() failed\n");
-+		        free(path);
-+		        return rv;
-+		    }
-+		}
-+		entry = new_vnode->vnode;
-+	}
      buffer->d_dev = 0;
      buffer->d_pdev = 0;
 -    buffer->d_ino = new_vnode->vnode;
@@ -1525,7 +1505,7 @@ index 5e2b88c..ac44ffa 100644
      uint32 num_read = 0;
      status_t rv = B_OK;
  
-+	dprintf(FS_NAME ": vboxsf_read_dir\n");
++    dprintf(FS_NAME ": vboxsf_read_dir\n");
 +
      for (num_read = 0; num_read < *_num && cookie->has_more_files; num_read++)
      {
@@ -1538,7 +1518,7 @@ index 5e2b88c..ac44ffa 100644
  
  status_t vboxsf_read_fs_info(fs_volume* _volume, struct fs_info* info)
  {
-+	dprintf(FS_NAME ": vboxsf_read_fs_info\n");
++    dprintf(FS_NAME ": vboxsf_read_fs_info\n");
 +    
      vboxsf_volume* volume = _volume->private_volume;
  
@@ -1558,16 +1538,16 @@ index 5e2b88c..ac44ffa 100644
  
 +status_t vboxsf_access(fs_volume* volume, fs_vnode* vnode, int mode)
 +{
-+	vboxsf_vnode* node = vnode->private_node;
-+	
-+	mode_t attributes = node->mode;	
++    vboxsf_vnode* node = vnode->private_node;
++    
++    mode_t attributes = node->mode; 
 +
-+	if (((mode & R_OK) == R_OK && !(((attributes & S_IRUSR) == S_IRUSR) || ((attributes & S_IRGRP) == S_IRGRP)))
-+		|| ((mode & W_OK) == W_OK && !(((attributes & S_IWUSR) == S_IWUSR) || ((attributes & S_IWGRP) == S_IWGRP)))
-+			|| ((mode & X_OK) == X_OK && !(((attributes & S_IXUSR) == S_IXUSR) || ((attributes & S_IXGRP) == S_IXGRP))))
-+		return B_PERMISSION_DENIED;
++    if (((mode & R_OK) == R_OK && !(((attributes & S_IRUSR) == S_IRUSR) || ((attributes & S_IRGRP) == S_IRGRP)))
++        || ((mode & W_OK) == W_OK && !(((attributes & S_IWUSR) == S_IWUSR) || ((attributes & S_IWGRP) == S_IWGRP)))
++            || ((mode & X_OK) == X_OK && !(((attributes & S_IXUSR) == S_IXUSR) || ((attributes & S_IXGRP) == S_IXGRP))))
++        return B_PERMISSION_DENIED;
 +
-+	return B_OK;
++    return B_OK;
 +}
  
  status_t vboxsf_lookup(fs_volume* _volume, fs_vnode* dir, const char* name, ino_t* _id)
@@ -1577,14 +1557,14 @@ index 5e2b88c..ac44ffa 100644
 +    vboxsf_vnode* sfnode = dir->private_node;
 +
 +    if (strcmp(name,".")==0) {
-+		//return dir node
-+		*_id = sfnode->vnode;
-+	    return get_vnode(_volume, *_id, NULL);
++        //return dir node
++        *_id = sfnode->vnode;
++        return get_vnode(_volume, *_id, NULL);
 +    }
 +    if (strcmp(name,"..")==0) {
-+    	//return parent node
-+    	*_id = sfnode->parentvnode;
-+	    return get_vnode(_volume, *_id, NULL);
++        //return parent node
++        *_id = sfnode->parentvnode;
++        return get_vnode(_volume, *_id, NULL);
 +    }
 +
      SHFLCREATEPARMS params;
@@ -1597,12 +1577,12 @@ index 5e2b88c..ac44ffa 100644
 +    
 +    dprintf(FS_NAME ": lookup full path %s\n", path->String.utf8);
 +    vboxsf_vnode* vn;
-+	if (find_node_by_name(path->String.utf8, &vn))
-+	{
-+	    *_id = vn->vnode;
-+    	dprintf(FS_NAME ": attempt to return pointer to inode %ld\n", vn->vnode);
-+	    return get_vnode(_volume, *_id, NULL);
-+	}    
++    if (find_node_by_name(path->String.utf8, &vn))
++    {
++        *_id = vn->vnode;
++        dprintf(FS_NAME ": attempt to return pointer to inode %ld\n", vn->vnode);
++        return get_vnode(_volume, *_id, NULL);
++    }    
  
      int rc = VbglR0SfCreate(&g_clientHandle, &volume->map, path, &params);
      if (RT_SUCCESS(rc))
@@ -1617,16 +1597,16 @@ index 5e2b88c..ac44ffa 100644
 -                rv = publish_vnode(_volume, vn->vnode, vn, &vboxsf_vnode_ops, mode_from_fmode(params.Info.Attr.fMode), 0);
 -            }
 -            return rv;
-+           	dprintf(FS_NAME ": no existing node\n");
-+           	status_t rv = vboxsf_new_vnode(_volume, &volume->map, path, path, sfnode->vnode, mode_from_fmode(params.Info.Attr.fMode), &vn, false);
++            dprintf(FS_NAME ": no existing node\n");
++            status_t rv = vboxsf_new_vnode(_volume, &volume->map, path, path, sfnode->vnode, mode_from_fmode(params.Info.Attr.fMode), &vn, false);
 +            *_id = vn->vnode;
 +
-+	    	dprintf(FS_NAME ": attempt to return pointer to inode %ld\n", vn->vnode);
-+		    return get_vnode(_volume, *_id, NULL);
++            dprintf(FS_NAME ": attempt to return pointer to inode %ld\n", vn->vnode);
++            return get_vnode(_volume, *_id, NULL);
          }
          else
          {
-+        	dprintf(FS_NAME ": for %s return path not found\n", name);
++            dprintf(FS_NAME ": for %s return path not found\n", name);
              free(path);
              return B_ENTRY_NOT_FOUND;
          }
@@ -1635,8 +1615,8 @@ index 5e2b88c..ac44ffa 100644
      RT_ZERO(params);
      params.Handle = SHFL_HANDLE_NIL;
 -
-+	params.Info.cbObject = 0;
-+	
++    params.Info.cbObject = 0;
++    
      if (openMode & O_RDWR)
          params.CreateFlags |= SHFL_CF_ACCESS_READWRITE;
      else if (openMode & O_RDONLY)
@@ -1655,11 +1635,11 @@ index 5e2b88c..ac44ffa 100644
 -    return vboxsf_lookup(_volume, _dir, name, _newVnodeID);
 +
 +    vboxsf_vnode* vn;
-+	status_t rv = vboxsf_new_vnode(_volume, &volume->map, path, path, sfnode->vnode, mode_from_fmode(params.Info.Attr.fMode), &vn, false);
-+	*_newVnodeID = vn->vnode;
-+	get_vnode(_volume, vn->vnode, NULL);
-+	get_vnode(_volume, vn->vnode, NULL);
-+	return notify_entry_created(volume->rootid, sfnode->vnode, path->String.utf8, vn->vnode);
++    status_t rv = vboxsf_new_vnode(_volume, &volume->map, path, path, sfnode->vnode, mode_from_fmode(params.Info.Attr.fMode), &vn, false);
++    *_newVnodeID = vn->vnode;
++    get_vnode(_volume, vn->vnode, NULL);
++    get_vnode(_volume, vn->vnode, NULL);
++    return notify_entry_created(volume->rootid, sfnode->vnode, path->String.utf8, vn->vnode);
  }
  
  
@@ -1699,19 +1679,19 @@ index 5e2b88c..ac44ffa 100644
 +    
 +    dprintf("vboxsf_create_dir path %s\n", path->String.utf8);
 +    
-+	if (RT_FAILURE(rc))
-+	{
-+	    free(path);
-+		return (vbox_err_to_haiku_err(rc));
-+	}
++    if (RT_FAILURE(rc))
++    {
++        free(path);
++        return (vbox_err_to_haiku_err(rc));
++    }
      if (params.Handle == SHFL_HANDLE_NIL)
 +    {
-+	    free(path);
++        free(path);
          return vbox_err_to_haiku_err(rc);
 +    }
 +    
 +    vboxsf_vnode* dir_vnode;
-+	vboxsf_vnode* parentnode = parent->private_node;
++    vboxsf_vnode* parentnode = parent->private_node;
 +
 +    status_t rs = vboxsf_new_vnode(_volume, &volume->map, path, path, parentnode->vnode, mode_from_fmode(params.Info.Attr.fMode), &dir_vnode, false);
      VbglR0SfClose(&g_clientHandle, &volume->map, params.Handle);
@@ -1724,23 +1704,23 @@ index 5e2b88c..ac44ffa 100644
      vboxsf_volume* volume = _volume->private_volume;
  
      PSHFLSTRING path = build_path(parent->private_node, name);
-+	dprintf("vboxsf_remove_dir path %s\n", path->String.utf8);
++    dprintf("vboxsf_remove_dir path %s\n", path->String.utf8);
 +
 +    vboxsf_vnode* new_vnode;
-+	
++    
 +    if (!find_node_by_name(path->String.utf8, &new_vnode))
-+	{
-+		free(path);
-+		return B_ENTRY_NOT_FOUND;
-+	}
++    {
++        free(path);
++        return B_ENTRY_NOT_FOUND;
++    }
      int rc = VbglR0SfRemove(&g_clientHandle, &volume->map, path, SHFL_REMOVE_DIR);
 +    if (RT_SUCCESS(rc)) {
-+	    remove_vnode(_volume, new_vnode->vnode);
-+		put_vnode(_volume, new_vnode->vnode);
++        remove_vnode(_volume, new_vnode->vnode);
++        put_vnode(_volume, new_vnode->vnode);
 +    }
      free(path);
 -
-+	dprintf("vboxsf_remove_dir returned %d\n", rc);
++    dprintf("vboxsf_remove_dir returned %d\n", rc);
 +    
      return vbox_err_to_haiku_err(rc);
  }
@@ -1754,27 +1734,27 @@ index 5e2b88c..ac44ffa 100644
      PSHFLSTRING path = build_path(parent->private_node, name);
 +    
 +    vboxsf_vnode* new_vnode;
-+	vboxsf_vnode* oldnode;	
++    vboxsf_vnode* oldnode;  
 +    if (!find_node_by_name(path->String.utf8, &new_vnode))
-+	{
-+		free(path);
-+		return B_ENTRY_NOT_FOUND;
-+	}
++    {
++        free(path);
++        return B_ENTRY_NOT_FOUND;
++    }
 +    get_vnode(_volume, new_vnode->vnode, (void**)&oldnode);
-+		
++        
      int rc = VbglR0SfRemove(&g_clientHandle, &volume->map, path, SHFL_REMOVE_FILE);
 +    if (RT_SUCCESS(rc))
-+	{
-+		ino_t entry = new_vnode->vnode;
-+	    vboxsf_vnode* parentnode = parent->private_node;
-+	    remove_vnode(_volume, new_vnode->vnode);
-+	    status_t status = notify_entry_removed(volume->rootid, parentnode->vnode, name, new_vnode->vnode); 
-+	    put_vnode(_volume, new_vnode->vnode);
-+	    //put_vnode(_volume, new_vnode->vnode);
-+	    free(path);
-+	    return status;
-+	}
-+	put_vnode(_volume, new_vnode->vnode);
++    {
++        ino_t entry = new_vnode->vnode;
++        vboxsf_vnode* parentnode = parent->private_node;
++        remove_vnode(_volume, new_vnode->vnode);
++        status_t status = notify_entry_removed(volume->rootid, parentnode->vnode, name, new_vnode->vnode); 
++        put_vnode(_volume, new_vnode->vnode);
++        //put_vnode(_volume, new_vnode->vnode);
++        free(path);
++        return status;
++    }
++    put_vnode(_volume, new_vnode->vnode);
      free(path);
  
      return vbox_err_to_haiku_err(rc);
@@ -1789,15 +1769,15 @@ index 5e2b88c..ac44ffa 100644
 +    vboxsf_vnode * fromnode = fromDir->private_node;
 +    vboxsf_vnode * tonode = toDir->private_node;
 +    
-+	dprintf("vboxsf_rename called fromName:%s toName:%s\n", fromName, toName);
++    dprintf("vboxsf_rename called fromName:%s toName:%s\n", fromName, toName);
 +    PSHFLSTRING oldpath = build_path(fromnode, fromName);
 +    PSHFLSTRING newpath = build_path(tonode, toName);
 +    
 +    vboxsf_vnode * vn;
 +    if (!find_node_by_name(oldpath->String.utf8, &vn))
 +    {
-+	    free(oldpath);
-+	    free(newpath);
++        free(oldpath);
++        free(newpath);
 +    }
 +    mode_t mode = S_IRUSR | S_IROTH | S_IWUSR | S_IRGRP | S_IWGRP | S_IWOTH | S_IXUSR | S_IXGRP | S_IXOTH;
 +    bool isDir = (vn->mode & S_IFDIR) == S_IFDIR;
@@ -1805,18 +1785,18 @@ index 5e2b88c..ac44ffa 100644
 +    dprintf("vboxsf_rename returned %d\n", rc);
 +    if (RT_SUCCESS(rc))
 +    {
-+    	get_vnode(_volume, vn->vnode, (void**)&vn);
-+    	//replace old entry values
-+		free(vn->path);
-+		vn->path = newpath;
-+		vn->parentvnode = tonode->vnode;
-+		//create new entry
-+    	dprintf(FS_NAME ": attempt to return pointer to inode %ld\n", vn->vnode);
-+    	put_vnode(_volume, vn->vnode);
-+    	notify_entry_moved(volume->rootid, fromnode->vnode, fromName, tonode->vnode, toName, vn->vnode);
-+    	
-+    	free(oldpath);
-+		return B_OK;
++        get_vnode(_volume, vn->vnode, (void**)&vn);
++        //replace old entry values
++        free(vn->path);
++        vn->path = newpath;
++        vn->parentvnode = tonode->vnode;
++        //create new entry
++        dprintf(FS_NAME ": attempt to return pointer to inode %ld\n", vn->vnode);
++        put_vnode(_volume, vn->vnode);
++        notify_entry_moved(volume->rootid, fromnode->vnode, fromName, tonode->vnode, toName, vn->vnode);
++        
++        free(oldpath);
++        return B_OK;
 +    }
 +    
      free(oldpath);
@@ -1826,10 +1806,10 @@ index 5e2b88c..ac44ffa 100644
          case VINF_SUCCESS:              return B_OK;
          case VERR_INVALID_POINTER:      return B_BAD_ADDRESS;
          case VERR_INVALID_PARAMETER:    return B_BAD_VALUE;
-+        case VERR_ACCESS_DENIED:    	return B_PERMISSION_DENIED;
++        case VERR_ACCESS_DENIED:        return B_PERMISSION_DENIED;
          case VERR_PERMISSION_DENIED:    return B_PERMISSION_DENIED;
          case VERR_NOT_IMPLEMENTED:      return B_UNSUPPORTED;
-+        case VERR_INVALID_NAME:		    return B_ENTRY_NOT_FOUND;
++        case VERR_INVALID_NAME:         return B_ENTRY_NOT_FOUND;
          case VERR_FILE_NOT_FOUND:       return B_ENTRY_NOT_FOUND;
  
          case SHFL_PATH_NOT_FOUND:
@@ -1966,7 +1946,7 @@ index a4aa8f5..b53fd48 100644
  #endif /* !GA_INCLUDED_SRC_haiku_SharedFolders_vboxsf_h */
  
 diff --git a/src/VBox/Additions/haiku/SharedFolders/vnode_cache.cpp b/src/VBox/Additions/haiku/SharedFolders/vnode_cache.cpp
-index f419cc6..5d76475 100644
+index f419cc6..03d0604 100644
 --- a/src/VBox/Additions/haiku/SharedFolders/vnode_cache.cpp
 +++ b/src/VBox/Additions/haiku/SharedFolders/vnode_cache.cpp
 @@ -44,7 +44,9 @@
@@ -2004,55 +1984,53 @@ index f419cc6..5d76475 100644
      if (name)
          vn->name = name;
      else
-@@ -104,31 +110,105 @@ extern "C" status_t vboxsf_new_vnode(PVBSFMAP map, PSHFLSTRING path, PSHFLSTRING
+@@ -104,12 +110,29 @@ extern "C" status_t vboxsf_new_vnode(PVBSFMAP map, PSHFLSTRING path, PSHFLSTRING
      }
  
      vn->vnode = g_nextVnid++;
 +    if (!isRoot) {
-+    	//acquire_vnode(volume, vn->vnode);
++       //acquire_vnode(volume, vn->vnode);
 +    }
      *p = vn;
      dprintf("vboxsf: allocated %p (path=%p name=%p)\n", vn, vn->path, vn->name);
      status_t rv = g_cache.Insert(vn);
  
--    mutex_unlock(&g_vnodeCacheLock);
++    if (current != NULL)
++    {
++        current->next = vn;
++        current->int_next = vn;
++    } else
++    {
++       dprintf("No current vnode\n");
++    }
++    current = vn;
++    if (!isRoot) {
++        //get_vnode(volume, vn->vnode, NULL);
++        //unremove_vnode(volume, vn->vnode);
++        //put_vnode(volume, vn->vnode);
++        //put_vnode(volume, vn->vnode);
++    }
+     mutex_unlock(&g_vnodeCacheLock);
 -
--    return rv;
-+	if (current != NULL)
-+	{
-+		current->next = vn;
-+		current->int_next = vn;
-+	} else 
-+	{
-+		dprintf("No current vnode\n");
-+	}
-+	current = vn;
-+	if (!isRoot) {
-+		//get_vnode(volume, vn->vnode, NULL);
-+	    //unremove_vnode(volume, vn->vnode);
-+		//put_vnode(volume, vn->vnode);
-+		//put_vnode(volume, vn->vnode);
-+	}
-+	mutex_unlock(&g_vnodeCacheLock);
-+	return rv;
+     return rv;
  }
  
- 
+@@ -117,18 +140,75 @@ extern "C" status_t vboxsf_new_vnode(PVBSFMAP map, PSHFLSTRING path, PSHFLSTRING
  extern "C" status_t vboxsf_get_vnode(fs_volume* volume, ino_t id, fs_vnode* vnode,
                                       int* _type, uint32* _flags, bool reenter)
  {
-+	dprintf("vboxsf_get_vnode\n");
++    dprintf("vboxsf_get_vnode\n");
      vboxsf_vnode* vn = g_cache.Lookup(id);
-+	dprintf("Performed lookup for %d\n", id);
-+	_flags = 0;
++    dprintf("Performed lookup for %d\n", id);
++    _flags = 0;
      if (vn)
      {
-+    	dprintf("Found node, returning\n");
++       dprintf("Found node, returning\n");
 +
          vnode->private_node = vn;
 +        vnode->ops = &vboxsf_vnode_ops;
 +        *_type = vn->mode;
-+        
++
          return B_OK;
      }
 +    dprintf("Failed to find node\n");
@@ -2065,57 +2043,57 @@ index f419cc6..5d76475 100644
 -    g_cache.Remove((vboxsf_vnode*)vnode->private_node);
 +    vboxsf_volume* _volume = (vboxsf_volume*)volume->private_volume;
 +    vboxsf_vnode* _vnode = (vboxsf_vnode*)vnode->private_node;
-+    
-+	dprintf("Call vboxsf_put_vnode %ld (%s)\n", _vnode->vnode, _vnode->path->String.utf8);
++
++    dprintf("Call vboxsf_put_vnode %ld (%s)\n", _vnode->vnode, _vnode->path->String.utf8);
 +    if (1 == _vnode->vnode)
 +    {
-+    	return B_OK;
++       return B_OK;
 +    }
 +    vboxsf_delete_vnode(_vnode);
-+	
-+	dprintf("Call vboxsf_put_vnode return OK\n");
++   
++    dprintf("Call vboxsf_put_vnode return OK\n");
 +    return B_OK;
  }
  
 +extern "C" status_t vboxsf_remove_vnode(fs_volume* volume, fs_vnode* vnode, bool reenter)
 +{
-+	dprintf("Call vboxsf_remove_vnode %d\n", reenter);
++    dprintf("Call vboxsf_remove_vnode %d\n", reenter);
 +    vboxsf_volume* _volume = (vboxsf_volume*)volume->private_volume;
 +    vboxsf_vnode* _vnode = (vboxsf_vnode*)vnode->private_node;
-+    
++
 +    if (1 == _vnode->vnode)
 +    {
-+    	return B_OK;
++       return B_OK;
 +    }
 +
-+   	vboxsf_delete_vnode(_vnode);
-+    
-+	dprintf("Call vboxsf_remove_vnode return OK\n");
++       vboxsf_delete_vnode(_vnode);
++
++    dprintf("Call vboxsf_remove_vnode return OK\n");
 +    return B_OK;
 +}
 +
 +extern "C" status_t vboxsf_delete_vnode(vboxsf_vnode* vnode)
 +{
-+	dprintf("Call vboxsf_delete_vnode (vboxsf_vnode)\n");
-+   	// retain link to next entry
-+	vboxsf_vnode* prev;
-+	ino_t entry = vnode->vnode;
-+	if (find_node_ancestor_by_ref(entry, &prev))
-+	{
-+		prev->next = vnode->next;
-+		prev->int_next = vnode->int_next;
-+	}
-+	if (current == vnode) 
-+		current = prev;
-+   	free(vnode->path);
-+    g_cache.Remove(vnode);
-+    free(vnode);
-+    vnode = NULL;
-+	dprintf("Call vboxsf_delete_vnode return OK\n");
-+    return B_OK;
++    dprintf("Call vboxsf_delete_vnode (vboxsf_vnode)\n");
++    // retain link to next entry
++    vboxsf_vnode* prev;
++    ino_t entry = vnode->vnode;
++    if (find_node_ancestor_by_ref(entry, &prev))
++    {
++        prev->next = vnode->next;
++        prev->int_next = vnode->int_next;
++    }
++    if (current == vnode) 
++        current = prev;
++        free(vnode->path);
++     g_cache.Remove(vnode);
++     free(vnode);
++     vnode = NULL;
++     dprintf("Call vboxsf_delete_vnode return OK\n");
++     return B_OK;
 +}
 diff --git a/src/VBox/Additions/haiku/VBoxMouse/VBoxMouse.cpp b/src/VBox/Additions/haiku/VBoxMouse/VBoxMouse.cpp
-index ee450b8..4ada6de 100644
+index ee450b8..53b392a 100644
 --- a/src/VBox/Additions/haiku/VBoxMouse/VBoxMouse.cpp
 +++ b/src/VBox/Additions/haiku/VBoxMouse/VBoxMouse.cpp
 @@ -48,8 +48,6 @@
@@ -2143,7 +2121,7 @@ index ee450b8..4ada6de 100644
      int rc = VbglR3GetMouseStatus(&fFeatures, NULL, NULL);
      if (RT_SUCCESS(rc))
      {
-+    	fFeatures &= VMMDEV_MOUSE_GUEST_NEEDS_HOST_CURSOR;
++        fFeatures &= VMMDEV_MOUSE_GUEST_NEEDS_HOST_CURSOR;
          rc = VbglR3SetMouseStatus(fFeatures | VMMDEV_MOUSE_GUEST_CAN_ABSOLUTE | VMMDEV_MOUSE_NEW_PROTOCOL);
          if (RT_FAILURE(rc))
              LogRel(("VbglR3SetMouseStatus failed. rc=%d\n", rc));
@@ -2162,24 +2140,18 @@ index ee450b8..4ada6de 100644
  {
 -    int rc = VbglR3Init();
 -    if (!RT_SUCCESS(rc))
--        return ENXIO;
-+	if (!fInited)
-+		return ENXIO;
++    if (!fInited)
+         return ENXIO;
  
      input_device_ref device = { (char *)"VBoxMouse", B_POINTING_DEVICE, (void *)this };
      input_device_ref *deviceList[2] = { &device, NULL };
--    RegisterDevices(deviceList);
+     RegisterDevices(deviceList);
 -
-+    RegisterDevices(deviceList);   
      return B_OK;
  }
  
-@@ -284,10 +284,10 @@ status_t VBoxMouse::_ServiceThread()
-         if (   RT_SUCCESS(rc)
-             && (fFeatures & VMMDEV_MOUSE_HOST_WANTS_ABSOLUTE))
-         {
--            float x = cx * 1.0 / 65535;
-+            float x = cx * 1.0 / 65535; 
+@@ -287,7 +287,7 @@ status_t VBoxMouse::_ServiceThread()
+             float x = cx * 1.0 / 65535;
              float y = cy * 1.0 / 65535;
  
 -            _debugPrintf("VBoxMouse: at %d,%d %f,%f\n", cx, cy, x, y);
@@ -2188,7 +2160,7 @@ index ee450b8..4ada6de 100644
              /* Send absolute movement */
              bigtime_t now = system_time();
 diff --git a/src/VBox/Additions/haiku/VBoxMouse/VBoxMouse.h b/src/VBox/Additions/haiku/VBoxMouse/VBoxMouse.h
-index 9280a18..ae32828 100644
+index 9280a18..239eeb7 100644
 --- a/src/VBox/Additions/haiku/VBoxMouse/VBoxMouse.h
 +++ b/src/VBox/Additions/haiku/VBoxMouse/VBoxMouse.h
 @@ -50,9 +50,10 @@
@@ -2207,15 +2179,15 @@ index 9280a18..ae32828 100644
          int                     fDriverFD;
          thread_id               fServiceThreadID;
          bool                    fExiting;
-+        bool					fInited;
++        bool                    fInited;
  };
  
  #endif /* !GA_INCLUDED_SRC_haiku_VBoxMouse_VBoxMouse_h */
 diff --git a/src/VBox/Additions/haiku/VBoxTray/Makefile.kmk b/src/VBox/Additions/haiku/VBoxTray/Makefile.kmk
-index eeb6989..7b0ae85 100644
+index eeb6989..2d117ad 100644
 --- a/src/VBox/Additions/haiku/VBoxTray/Makefile.kmk
 +++ b/src/VBox/Additions/haiku/VBoxTray/Makefile.kmk
-@@ -52,23 +52,22 @@ include	$(KBUILD_PATH)/subheader.kmk
+@@ -52,21 +52,20 @@ include	$(KBUILD_PATH)/subheader.kmk
  
  PROGRAMS += VBoxTray
  VBoxTray_TEMPLATE = VBOXGUESTR3EXE
@@ -2235,17 +2207,14 @@ index eeb6989..7b0ae85 100644
 +	VBoxDisplay.cpp
  VBoxTray_SOURCES += \
 -  	$(PATH_ROOT)/src/VBox/GuestHost/SharedClipboard/clipboard-helper.cpp
-+  	$(PATH_ROOT)/src/VBox/GuestHost/SharedClipboard/clipboard-common.cpp
++	$(PATH_ROOT)/src/VBox/GuestHost/SharedClipboard/clipboard-common.cpp
  
  VBoxTray_LIBS     = \
  	be translation \
 -	$(VBOX_LIB_VBGL_R3) \
  	$(VBOX_LIB_IPRT_GUEST_R3) \
--	$(VBOX_LIB_VBGL_R3)
-+	$(VBOX_LIB_VBGL_R3) 
+ 	$(VBOX_LIB_VBGL_R3)
  
- VBoxTray_RSRCS   += $(VBoxTray_0_OUTDIR)/VBoxTray.rsrc
- VBoxTray_DEPS    += $(VBoxTray_0_OUTDIR)/VBoxTray.rsrc
 diff --git a/src/VBox/Additions/haiku/VBoxTray/VBoxClipboard.cpp b/src/VBox/Additions/haiku/VBoxTray/VBoxClipboard.cpp
 index 87f2d01..4b0c081 100644
 --- a/src/VBox/Additions/haiku/VBoxTray/VBoxClipboard.cpp
@@ -2344,7 +2313,7 @@ index 2c38067..c8e2d3c 100644
  
          if (RT_SUCCESS(rc))
 diff --git a/src/VBox/Additions/haiku/VBoxTray/VBoxGuestApplication.cpp b/src/VBox/Additions/haiku/VBoxTray/VBoxGuestApplication.cpp
-index 1c4587a..91983f4 100644
+index 1c4587a..316b6b7 100644
 --- a/src/VBox/Additions/haiku/VBoxTray/VBoxGuestApplication.cpp
 +++ b/src/VBox/Additions/haiku/VBoxTray/VBoxGuestApplication.cpp
 @@ -48,44 +48,37 @@
@@ -2367,23 +2336,22 @@ index 1c4587a..91983f4 100644
  
 -VBoxGuestApplication::VBoxGuestApplication()
 -     : BApplication(VBOX_GUEST_APP_SIG)
--{
--}
--
--
--VBoxGuestApplication::~VBoxGuestApplication()
 +status_t our_image(image_info & image)
  {
-+	team_id team = B_CURRENT_TEAM;
-+	int32 cookie = 0;
-+	
-+	while (get_next_image_info(team, &cookie, &image) == B_OK)
-+	{
-+		if ((char *)our_image >= (char *)image.text
-+			&& (char *)our_image <= (char *)image.text + image.text_size)
-+				return B_OK;	
-+	}
-+	return B_ERROR;
+-}
+-
++   team_id team = B_CURRENT_TEAM;
++   int32 cookie = 0;
+ 
+-VBoxGuestApplication::~VBoxGuestApplication()
+-{
++   while (get_next_image_info(team, &cookie, &image) == B_OK)
++   {
++       if ((char *)our_image >= (char *)image.text
++           && (char *)our_image <= (char *)image.text + image.text_size)
++               return B_OK;
++   }
++   return B_ERROR;
  }
  
 -
@@ -2402,16 +2370,16 @@ index 1c4587a..91983f4 100644
 -    new VBoxGuestApplication();
 -    be_app->Run();
 -    delete be_app;
-+ 	status_t err;
-+	image_info info;
-+	entry_ref ref;
-+	
-+	if (our_image(info) == B_OK && get_ref_for_path(info.name, &ref) == B_OK) {
-+		BDeskbar deskbar;
-+		if (!deskbar.IsRunning()) return 1;
-+		//VBoxGuestDeskbarView * dv = new VBoxGuestDeskbarView();
-+		deskbar.AddItem(&ref);
-+	}
++   status_t err;
++   image_info info;
++   entry_ref ref;
++
++   if (our_image(info) == B_OK && get_ref_for_path(info.name, &ref) == B_OK) {
++       BDeskbar deskbar;
++       if (!deskbar.IsRunning()) return 1;
++       //VBoxGuestDeskbarView * dv = new VBoxGuestDeskbarView();
++       deskbar.AddItem(&ref);
++   }
      return 0;
  }
  
@@ -2501,7 +2469,7 @@ index 0b6b6d2..0000000
 -#endif /* !GA_INCLUDED_SRC_haiku_VBoxTray_VBoxGuestApplication_h */
 -
 diff --git a/src/VBox/Additions/haiku/VBoxTray/VBoxGuestDeskbarView.cpp b/src/VBox/Additions/haiku/VBoxTray/VBoxGuestDeskbarView.cpp
-index 16f039e..18da3e4 100644
+index 16f039e..c7ca8a3 100644
 --- a/src/VBox/Additions/haiku/VBoxTray/VBoxGuestDeskbarView.cpp
 +++ b/src/VBox/Additions/haiku/VBoxTray/VBoxGuestDeskbarView.cpp
 @@ -49,51 +49,35 @@
@@ -2570,45 +2538,41 @@ index 16f039e..18da3e4 100644
  VBoxGuestDeskbarView::~VBoxGuestDeskbarView()
  {
 -    delete fIcon;
--    if (fClipboardService)
--    {
--        fClipboardService->Disconnect();
--        delete fClipboardService;
-+	if (fIcon)
-+    	delete fIcon;
-+   	BMessage message(B_QUIT_REQUESTED);
++    if (fIcon)
++        delete fIcon;
++        BMessage message(B_QUIT_REQUESTED);
 +    if (fDisplayService) {
-+	    fDisplayService->MessageReceived(&message);
-+	    //fDisplayService->Stop();
-+	    delete fDisplayService;
-+	    fDisplayService = NULL;
++        fDisplayService->MessageReceived(&message);
++        //fDisplayService->Stop();
++        delete fDisplayService;
++        fDisplayService = NULL;
++    }
+     if (fClipboardService)
+     {
++        fClipboardService->MessageReceived(&message);
+         fClipboardService->Disconnect();
+         delete fClipboardService;
++        fClipboardService = NULL;
++    }
++       
++    if (inited) {
++        VbglR3Term();
++        inited = false;
      }
 -    VbglR3Term();
-+	if (fClipboardService)
-+	{
-+		fClipboardService->MessageReceived(&message);
-+    	fClipboardService->Disconnect();
-+        delete fClipboardService;
-+        fClipboardService = NULL;
-+	}
-+	    
-+	if (inited) {
-+	    VbglR3Term();
-+	    inited = false;
-+	}
  }
  
  
 +BBitmap * get_resource_bitmap()
 +{
-+	entry_ref ref;
-+	BBitmap *bmp = new BBitmap(BRect(0,0, B_MINI_ICON-1, B_MINI_ICON-1), B_CMAP8);
-+	if (be_roster->FindApp(VBOX_GUEST_APP_SIG, &ref) != B_OK) return NULL;
-+	BNode file(&ref);
-+	BNodeInfo *info = new BNodeInfo(&file);
-+	info->GetIcon(bmp, B_MINI_ICON);
-+	delete info;
-+	return bmp;	
++    entry_ref ref;
++    BBitmap *bmp = new BBitmap(BRect(0,0, B_MINI_ICON-1, B_MINI_ICON-1), B_CMAP8);
++    if (be_roster->FindApp(VBOX_GUEST_APP_SIG, &ref) != B_OK) return NULL;
++    BNode file(&ref);
++    BNodeInfo *info = new BNodeInfo(&file);
++    info->GetIcon(bmp, B_MINI_ICON);
++    delete info;
++    return bmp;
 +}
 +
  BArchivable* VBoxGuestDeskbarView::Instantiate(BMessage *data)
@@ -2639,14 +2603,14 @@ index 16f039e..18da3e4 100644
      SetDrawingMode(B_OP_ALPHA);
 -    DrawBitmap(fIcon);
 +    if (fIcon != NULL)
-+    	DrawBitmap(fIcon);
++       DrawBitmap(fIcon);
  }
  
  
  void VBoxGuestDeskbarView::AttachedToWindow()
  {
      BView::AttachedToWindow();
-+   
++
      if (Parent())
      {
          SetViewColor(Parent()->ViewColor());
@@ -2677,9 +2641,9 @@ index 16f039e..18da3e4 100644
 -    BPoint where = ConvertToScreen(point);
 -
 -    if ((buttons & B_SECONDARY_MOUSE_BUTTON) != 0)
-+	BPoint point;
-+	uint32 buttons;
-+	GetMouse(&point, &buttons);
++    BPoint point;
++    uint32 buttons;
++    GetMouse(&point, &buttons);
 +    if ((buttons != B_SECONDARY_MOUSE_BUTTON))
      {
          BPopUpMenu *menu = new BPopUpMenu(B_EMPTY_STRING, false, false);
@@ -2688,9 +2652,9 @@ index 16f039e..18da3e4 100644
  
          menu->AddItem(new BMenuItem("Quit", new BMessage(B_QUIT_REQUESTED)));
          menu->SetTargetForItems(this);
-+    	BRect bounds = Bounds();
-+		pt = ConvertToScreen(pt);
-+		bounds = ConvertToScreen(bounds);
++        BRect bounds = Bounds();
++        pt = ConvertToScreen(pt);
++        bounds = ConvertToScreen(bounds);
  
 -        menu->Go(where, true, true, true);
 +        menu->Go(pt, true, true, true);
@@ -2713,9 +2677,9 @@ index 16f039e..18da3e4 100644
 -    BDeskbar deskbar;
 -    status_t err;
 +    {
-+    	Looper()->Lock();
-+		Looper()->RemoveHandler(fClipboardService);
-+		Looper()->Unlock();
++       Looper()->Lock();
++       Looper()->RemoveHandler(fClipboardService);
++       Looper()->Unlock();
  
 -    if (force)
          RemoveFromDeskbar();
@@ -2744,18 +2708,18 @@ index 16f039e..18da3e4 100644
 -
  status_t VBoxGuestDeskbarView::_Init(BMessage *archive)
  {
--    BString toolTipText;
-+	fIcon=NULL;
-+	fClipboardService=NULL;
-+	fDisplayService=NULL;
-+	
-+	BString toolTipText;
++    fIcon=NULL;
++    fClipboardService=NULL;
++    fDisplayService=NULL;
++
+     BString toolTipText;
      toolTipText << VBOX_PRODUCT << " Guest Additions ";
      toolTipText << VBOX_VERSION_MAJOR << "." << VBOX_VERSION_MINOR << "." << VBOX_VERSION_BUILD;
      toolTipText << "r" << VBOX_SVN_REV;
  
      SetToolTip(toolTipText.String());
--
++    fIcon = get_resource_bitmap();
+ 
 -    image_info info;
 -    if (our_image(info) != B_OK)
 -        return B_ERROR;
@@ -2780,17 +2744,15 @@ index 16f039e..18da3e4 100644
 -    }
 -
 -    int rc = RTR3InitDll(RTR3INIT_FLAGS_UNOBTRUSIVE);
-+	fIcon = get_resource_bitmap();
-+	
-+	int rc = RTR3InitExeNoArguments(0); //(RTR3INIT_FLAGS_UNOBTRUSIVE);
++    int rc = RTR3InitExeNoArguments(0); //(RTR3INIT_FLAGS_UNOBTRUSIVE);
      if (RT_SUCCESS(rc))
      {
 -        rc = VbglR3Init();
-+    	if (!inited)
-+        	rc = VbglR3Init();
++        if (!inited)
++            rc = VbglR3Init();
          if (RT_SUCCESS(rc))
          {
-+        	inited = true;
++            inited = true;
              fClipboardService = new VBoxShClService();
 +            //disabled as not supported currently and causes segfault on exit
              fDisplayService = new VBoxDisplayService();
@@ -2808,7 +2770,7 @@ index 16f039e..18da3e4 100644
 +        //syslog(LOG_ERR,"VBoxGuestDeskbarView::_init RTR3InitDll failed. rc=%d\n", rc);
 +    }
 +
-+	return B_OK;
++    return B_OK;
  }
  
  
@@ -2863,17 +2825,16 @@ index da817a5..6bf6396 100644
  
  #endif /* !GA_INCLUDED_SRC_haiku_VBoxTray_VBoxGuestDeskbarView_h */
 diff --git a/src/VBox/Additions/haiku/VBoxTray/VBoxTray.rdef b/src/VBox/Additions/haiku/VBoxTray/VBoxTray.rdef
-index 4d7e30b..c8d8a63 100644
+index 4d7e30b..fd0952d 100644
 --- a/src/VBox/Additions/haiku/VBoxTray/VBoxTray.rdef
 +++ b/src/VBox/Additions/haiku/VBoxTray/VBoxTray.rdef
 @@ -42,10 +42,9 @@
   * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
   * OTHER DEALINGS IN THE SOFTWARE.
   */
-+#include "VBoxGuestInternal.h" 
- 
--#include "VBoxGuestInternal.h"
 -
+ #include "VBoxGuestInternal.h"
+ 
 -resource(1, "BEOS:APP_SIG") #'MIMS' VBOX_GUEST_APP_SIG;
 +resource app_signature VBOX_GUEST_APP_SIG;
  
@@ -2966,7 +2927,7 @@ index f2df235..7a3c7b4 100644
              uint16_t width, height, vwidth, bpp, flags;
              VBoxVideoGetModeRegisters(&width, &height, &vwidth, &bpp, &flags);
 diff --git a/src/VBox/Runtime/common/misc/thread.cpp b/src/VBox/Runtime/common/misc/thread.cpp
-index 604dd04..eeb83e3 100644
+index 604dd04..9582100 100644
 --- a/src/VBox/Runtime/common/misc/thread.cpp
 +++ b/src/VBox/Runtime/common/misc/thread.cpp
 @@ -51,8 +51,11 @@
@@ -2983,7 +2944,7 @@ index 604dd04..eeb83e3 100644
  /*********************************************************************************************************************************
  *   Defined Constants And Macros                                                                                                 *
  *********************************************************************************************************************************/
-@@ -394,9 +397,11 @@ PRTTHREADINT rtThreadAlloc(RTTHREADTYPE enmType, unsigned fFlags, uint32_t fIntF
+@@ -394,6 +397,7 @@ PRTTHREADINT rtThreadAlloc(RTTHREADTYPE enmType, unsigned fFlags, uint32_t fIntF
  #ifdef RT_WITH_ICONV_CACHE
          rtStrIconvCacheInit(pThread);
  #endif
@@ -2991,11 +2952,7 @@ index 604dd04..eeb83e3 100644
          rc = RTSemEventMultiCreate(&pThread->EventUser);
          if (RT_SUCCESS(rc))
          {
-+        	
-             rc = RTSemEventMultiCreate(&pThread->EventTerminated);
-             if (RT_SUCCESS(rc))
-                 return pThread;
-@@ -576,7 +581,6 @@ DECLHIDDEN(PRTTHREADINT) rtThreadGet(RTTHREAD Thread)
+@@ -576,7 +580,6 @@ DECLHIDDEN(PRTTHREADINT) rtThreadGet(RTTHREAD Thread)
  DECLHIDDEN(uint32_t) rtThreadRelease(PRTTHREADINT pThread)
  {
      uint32_t cRefs;
@@ -3003,7 +2960,7 @@ index 604dd04..eeb83e3 100644
      Assert(pThread);
      if (pThread->cRefs >= 1)
      {
-@@ -725,7 +729,6 @@ DECLCALLBACK(DECLHIDDEN(int)) rtThreadMain(PRTTHREADINT pThread, RTNATIVETHREAD
+@@ -725,7 +728,6 @@ DECLCALLBACK(DECLHIDDEN(int)) rtThreadMain(PRTTHREADINT pThread, RTNATIVETHREAD
       */
      rtThreadSetState(pThread, RTTHREADSTATE_RUNNING);
      rc = pThread->pfnThread(pThread, pThread->pvUser);
@@ -3011,18 +2968,14 @@ index 604dd04..eeb83e3 100644
      /*
       * Paranoia checks for leftover resources.
       */
-@@ -801,9 +804,8 @@ RTDECL(int) RTThreadCreate(PRTTHREAD pThread, PFNRTTHREAD pfnThread, void *pvUse
+@@ -801,7 +803,6 @@ RTDECL(int) RTThreadCreate(PRTTHREAD pThread, PFNRTTHREAD pfnThread, void *pvUse
          pThreadInt->pfnThread = pfnThread;
          pThreadInt->pvUser    = pvUser;
          pThreadInt->cbStack   = cbStack;
 -
--        rc = rtThreadNativeCreate(pThreadInt, &NativeThread);
--        if (RT_SUCCESS(rc))
-+		rc = rtThreadNativeCreate(pThreadInt, &NativeThread);
-+		if (RT_SUCCESS(rc))
+         rc = rtThreadNativeCreate(pThreadInt, &NativeThread);
+         if (RT_SUCCESS(rc))
          {
-             rtThreadInsert(pThreadInt, NativeThread);
-             rtThreadRelease(pThreadInt);
 diff --git a/src/VBox/Runtime/r0drv/haiku/alloc-r0drv-haiku.c b/src/VBox/Runtime/r0drv/haiku/alloc-r0drv-haiku.c
 index 90fe0ce..9e9d111 100644
 --- a/src/VBox/Runtime/r0drv/haiku/alloc-r0drv-haiku.c
@@ -3037,7 +2990,7 @@ index 90fe0ce..9e9d111 100644
      area_id area = create_area("VirtualBox Contig Alloc", &pv, B_ANY_KERNEL_ADDRESS, cb, B_32_BIT_CONTIGUOUS,
                                 B_READ_AREA | B_WRITE_AREA);
 diff --git a/src/VBox/Runtime/r0drv/haiku/memobj-r0drv-haiku.c b/src/VBox/Runtime/r0drv/haiku/memobj-r0drv-haiku.c
-index 864078e..306cd69 100644
+index 0c3cb65..d4bb23e 100644
 --- a/src/VBox/Runtime/r0drv/haiku/memobj-r0drv-haiku.c
 +++ b/src/VBox/Runtime/r0drv/haiku/memobj-r0drv-haiku.c
 @@ -188,6 +188,7 @@ static int rtR0MemObjNativeAllocArea(PPRTR0MEMOBJINTERNAL ppMem, size_t cb,
@@ -3071,7 +3024,7 @@ index 9c4b121..cbbbf41 100644
  
  
 diff --git a/src/VBox/Runtime/r0drv/haiku/semmutex-r0drv-haiku.c b/src/VBox/Runtime/r0drv/haiku/semmutex-r0drv-haiku.c
-index fd6d0b3..7fc1fbd 100644
+index fd6d0b3..89b0078 100644
 --- a/src/VBox/Runtime/r0drv/haiku/semmutex-r0drv-haiku.c
 +++ b/src/VBox/Runtime/r0drv/haiku/semmutex-r0drv-haiku.c
 @@ -40,7 +40,10 @@
@@ -3126,7 +3079,7 @@ index fd6d0b3..7fc1fbd 100644
      }
  
 -    if (fFlags & RTSEMWAIT_FLAGS_INDEFINITE)
-+    if (uTimeout == RT_INDEFINITE_WAIT) 
++    if (uTimeout == RT_INDEFINITE_WAIT)
 +    {
          timeout = B_INFINITE_TIMEOUT;
 +        flags |= B_TIMEOUT;
@@ -3146,8 +3099,8 @@ index fd6d0b3..7fc1fbd 100644
 -            flags |= B_ABSOLUTE_TIMEOUT;
 -        else
 -            return VERR_INVALID_PARAMETER;
-+    	// may need to revisit this
-+    	timeout = uTimeout * 1000;
++        // may need to revisit this
++        timeout = uTimeout * 1000;
 +        flags |= B_RELATIVE_TIMEOUT;
      }
  
@@ -3183,7 +3136,7 @@ index fd6d0b3..7fc1fbd 100644
  
  
 diff --git a/src/VBox/Runtime/r0drv/haiku/the-haiku-kernel.h b/src/VBox/Runtime/r0drv/haiku/the-haiku-kernel.h
-index 602d3aa..1f07364 100644
+index 602d3aa..1b5e823 100644
 --- a/src/VBox/Runtime/r0drv/haiku/the-haiku-kernel.h
 +++ b/src/VBox/Runtime/r0drv/haiku/the-haiku-kernel.h
 @@ -61,6 +61,7 @@ extern area_id vm_clone_area(team_id team, const char *name, void **address, uin
@@ -3194,31 +3147,16 @@ index 602d3aa..1f07364 100644
  typedef struct
  {
      int32            flags;            /* summary of events relevant in interrupt handlers (signals pending, user debugging
-@@ -85,9 +86,9 @@ typedef struct
+@@ -85,6 +86,7 @@ typedef struct
  
  extern Thread* thread_get_thread_struct(thread_id id);
  extern Thread* thread_get_thread_struct_locked(thread_id id);
 +#endif
  
  extern void thread_yield(bool force);
--
- RT_C_DECLS_END
  
- /**
-diff --git a/src/VBox/Runtime/r0drv/haiku/thread-r0drv-haiku.c b/src/VBox/Runtime/r0drv/haiku/thread-r0drv-haiku.c
-index ec8edeb..e919291 100644
---- a/src/VBox/Runtime/r0drv/haiku/thread-r0drv-haiku.c
-+++ b/src/VBox/Runtime/r0drv/haiku/thread-r0drv-haiku.c
-@@ -39,7 +39,6 @@
- #include <iprt/errcore.h>
- #include <iprt/mp.h>
- 
--
- RTDECL(RTNATIVETHREAD) RTThreadNativeSelf(void)
- {
-     return (RTNATIVETHREAD)find_thread(NULL);
 diff --git a/src/VBox/Runtime/r0drv/haiku/thread2-r0drv-haiku.c b/src/VBox/Runtime/r0drv/haiku/thread2-r0drv-haiku.c
-index c2c13f9..1ce145d 100644
+index c2c13f9..cf51dab 100644
 --- a/src/VBox/Runtime/r0drv/haiku/thread2-r0drv-haiku.c
 +++ b/src/VBox/Runtime/r0drv/haiku/thread2-r0drv-haiku.c
 @@ -38,7 +38,10 @@
@@ -3239,8 +3177,8 @@ index c2c13f9..1ce145d 100644
      }
 -
      status = set_thread_priority((thread_id)pThread->Core.Key, iPriority);
-+	if (status>B_OK)
-+		return VINF_SUCCESS;
++    if (status>B_OK)
++        return VINF_SUCCESS;
  
      return RTErrConvertFromHaikuKernReturn(status);
  }
@@ -3259,10 +3197,10 @@ index c2c13f9..1ce145d 100644
      }
      return RTErrConvertFromHaikuKernReturn(NativeThread);
 diff --git a/src/VBox/Runtime/r3/posix/process-creation-posix.cpp b/src/VBox/Runtime/r3/posix/process-creation-posix.cpp
-index c7402da..63f36de 100644
+index be084b6..642505c 100644
 --- a/src/VBox/Runtime/r3/posix/process-creation-posix.cpp
 +++ b/src/VBox/Runtime/r3/posix/process-creation-posix.cpp
-@@ -104,6 +104,11 @@
+@@ -106,6 +106,11 @@
  # include <libcontract.h>
  #endif
  
@@ -3275,7 +3213,7 @@ index c7402da..63f36de 100644
  # include <paths.h>
  #else
 diff --git a/src/VBox/Runtime/r3/posix/serialport-posix.cpp b/src/VBox/Runtime/r3/posix/serialport-posix.cpp
-index fba73ac..934f671 100644
+index fba73ac..8d2f1d3 100644
 --- a/src/VBox/Runtime/r3/posix/serialport-posix.cpp
 +++ b/src/VBox/Runtime/r3/posix/serialport-posix.cpp
 @@ -581,6 +581,7 @@ static int rtSerialPortTermios2Cfg(PRTSERIALPORTINTERNAL pThis, struct termios *
@@ -3299,11 +3237,11 @@ index fba73ac..934f671 100644
  static DECLCALLBACK(int) rtSerialPortStsLineMonitorThrd(RTTHREAD hThreadSelf, void *pvUser)
  {
 +#ifdef RT_OS_HAIKU
-+	#define TIOCM_RNG TIOCM_RI
++    #define TIOCM_RNG TIOCM_RI
 +#endif
      RT_NOREF(hThreadSelf);
      PRTSERIALPORTINTERNAL pThis = (PRTSERIALPORTINTERNAL)pvUser;
      unsigned long const fStsLinesChk = TIOCM_CAR | TIOCM_RNG | TIOCM_DSR | TIOCM_CTS;
 -- 
-2.30.2
+2.37.3
 
