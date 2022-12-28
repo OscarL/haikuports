@@ -1,0 +1,62 @@
+SUMMARY="A unit of measure conversion utility for BeOS/Haiku/Zeta"
+DESCRIPTION="BeConverter is a BeOS native, multi-threaded unit of measure conversion \
+tool. It features high-speed, "live" cross-unit conversions using a custom \
+built conversion engine. BeConverter will come in handy for American \
+citizens since USA is the only country not to follow the metric system. \
+For e.g: the US follows farenheit instead of celcius as a measure of \
+temperature and miles instead of kilometers etc. \
+
+BeConverter is a freeware program and can be used, copied and \
+distributed freely but only in accord to the license agreement. A \
+similar app for Windows is being sold for $25 (USD) :-( So the least \
+you could do is write to me about BeConverter and copy it totally \
+in accord to the License. \
+
+BeConverter is completely extensible and flexible. It uses features of \
+the BeOS File System (BFS) to its advantage for speed and ease of \
+handling, the main reason why the BFS approach was chosen was not \
+only will it bring in complete customizability but because I was lazy to \
+write a new window for editing and adding units, checking for validity \
+etc. :^)\
+"
+HOMEPAGE="https://github.com/Teknomancer/beconverter"
+COPYRIGHT="2000-2016 Ramshankar (aka Teknomancer)"
+LICENSE="GNU GPL v3"
+REVISION="1"
+srcGitRev="1d2e807ece4800d934217618b251bf5c1c3bed50"
+SOURCE_URI="https://github.com/Teknomancer/beconverter/archive/$srcGitRev.tar.gz"
+CHECKSUM_SHA256="6bdb2071e35fd0cd93284a7ae8c64f6550981675a3b0eda43645d5d3b7ef29c9"
+SOURCE_DIR="beconverter-$srcGitRev"
+PATCHES="beconverter-$portVersion.patchset"
+
+ARCHITECTURES="all"
+
+PROVIDES="
+	beconverter = $portVersion
+	app:beconverter = $portVersion
+	"
+REQUIRES="
+	haiku
+	"
+
+BUILD_REQUIRES="
+	haiku_devel
+	makefile_engine
+	"
+BUILD_PREREQUIRES="
+	cmd:gcc
+	cmd:make
+	"
+
+BUILD()
+{
+	cd Source
+ 	make $jobArgs
+}
+
+INSTALL()
+{
+	cp Source/BeConverter $appsDir/BeConverter
+	cp -a Docs $appsDir/BeConverter
+	addAppDeskbarSymlink $appsDir/BeConverter/BeConverter
+}
