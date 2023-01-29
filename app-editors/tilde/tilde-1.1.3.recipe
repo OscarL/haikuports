@@ -1,0 +1,88 @@
+SUMMARY="The Tilde text editor "
+DESCRIPTION="Tilde is a text editor for the console/terminal, which provides an \
+intuitive interface for people accustomed to GUI environments such as Gnome, \
+KDE and Windows.
+
+For example, the short-cut to copy the current selection is Control-C, and to \
+paste the previously copied text the short-cut Control-V can be used. As \
+another example, the File menu can be accessed by pressing Meta-F."
+HOMEPAGE="https://github.com/gphalkes/tilde/"
+COPYRIGHT="2011-2022 G.P. Halkes"
+LICENSE="GNU GPL v3"
+REVISION="1"
+
+SOURCE_URI="https://os.ghalkes.nl/dist/tilde-$portVersion.tar.bz2"
+CHECKSUM_SHA256="6b86ffaa5c632c9055f74fca713c5bf8420ee60718850dc16a95abe49fa2641a"
+SOURCE_URI_2="https://os.ghalkes.nl/LLnextgen/releases/LLnextgen-0.5.5.tgz"
+CHECKSUM_SHA256_2="665f72db855eb104000a38b884bb96075a6ba542e4b863508374a4928f52c83a"
+SOURCE_URI_3="https://os.ghalkes.nl/dist/libt3config-1.0.0.tar.bz2"
+CHECKSUM_SHA256_3="1aba7262ed79b11b30f93d02183aafde49c9d6655f08ac438b26af3151908c01"
+SOURCE_URI_4="https://os.ghalkes.nl/dist/libt3highlight-0.4.9.tar.bz2"
+CHECKSUM_SHA256_4="f5c542df4ef0dcdefeb3ff28b0e1db6bdbd53e9bbbffb52be28718ad9d5eab18"
+SOURCE_URI_5="https://os.ghalkes.nl/dist/libt3key-0.2.9.tar.bz2"
+CHECKSUM_SHA256_5="fce7221ea3d1a20a1f4393e3d1a11590ca414a706a353d42e306110ca754df4c"
+SOURCE_URI_6="https://os.ghalkes.nl/dist/libt3widget-1.2.2.tar.bz2"
+CHECKSUM_SHA256_6="9eb7e1d0ccdfc917f18ba1785a2edb4faa6b0af8b460653d962abf91136ddf1c"
+SOURCE_URI_7="https://os.ghalkes.nl/dist/libt3window-0.4.0.tar.bz2"
+CHECKSUM_SHA256_7="7ebceee248a6032eef1cf00b2cd20aa5a7a14114441b40bacdec03858ce40d63"
+SOURCE_URI_8="https://os.ghalkes.nl/dist/libtranscript-0.3.3.tar.bz2"
+CHECKSUM_SHA256_8="1f8c19f257da5d6fad0ed9a7e5bd2442819e910a19907c38e115116a3955f5fa"
+
+SOURCE_DIR="$portVersionedName"
+
+#PATCHES="projectx-$portVersion.patchset"
+#ADDITIONAL_FILES="projectx.rdef"
+
+ARCHITECTURES="all !x86_gcc2"
+
+PROVIDES="
+	tilde$secondaryArchSuffix = $portVersion
+	cmd:tilde = $portVersion
+	"
+REQUIRES="
+	haiku$secondaryArchSuffix
+	lib:libintl$secondaryArchSuffix
+	lib:libncurses$secondaryArchSuffix
+	lib:libpcre2$secondaryArchSuffix
+	lib:libtool$secondaryArchSuffix
+	lib:libunistring$secondaryArchSuffix
+	lib:libxbc1$secondaryArchSuffix
+	lib:libx11$secondaryArchSuffix
+	"
+
+BUILD_REQUIRES="
+	haiku${secondaryArchSuffix}_devel
+	devel:gettext$secondaryArchSuffix
+	devel:libncurses$secondaryArchSuffix
+	devel:libpcre2_8$secondaryArchSuffix
+	devel:libtool$secondaryArchSuffix
+	devel:libunistring$secondaryArchSuffix
+	devel:libxbc1$secondaryArchSuffix
+	devel:libx11$secondaryArchSuffix
+	"
+BUILD_PREREQUIRES="
+	cmd:gcc$secondaryArchSuffix
+	cmd:make
+	cmd:flex
+	cmd:pkg_config$secondaryArchSuffix
+	"
+
+BUILD()
+{
+	for i in makesys transcript t3shared t3window t3widget t3key t3config t3highlight tilde ; do
+	    git clone https://github.com/gphalkes/$i.git --depth=1
+	done
+
+	COMPILER=gcc ./t3shared/doall --skip-non-source --stop-on-error make -C src
+}
+
+INSTALL()
+{
+	mkdir -p $binDir
+	cp -a objects/projectx $binDir
+}
+
+TEST()
+{
+	make check
+}
