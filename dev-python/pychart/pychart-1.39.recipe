@@ -6,7 +6,7 @@ HOMEPAGE="https://github.com/Infinite-Code/PyChart
 	https://pypi.org/project/Python-Chart/"
 COPYRIGHT="1999-2006 Yasushi Saito"
 LICENSE="GNU GPL v2"
-REVISION="3"
+REVISION="4"
 srcGitRev="b4613586ba193a1c8860e1e06c0190246325236b"
 SOURCE_URI="https://github.com/Infinite-Code/PyChart/archive/$srcGitRev.tar.gz"
 CHECKSUM_SHA256="7c8d7d0b7ca0843b07f1780382a161990b97e998f8b45a8f0ff91c1cf449343c"
@@ -22,21 +22,12 @@ REQUIRES="
 	haiku
 	"
 
-BUILD_REQUIRES="
-	haiku_devel
-	setuptools_python
-	setuptools_python3
-	"
-BUILD_PREREQUIRES="
-	cmd:python
-	cmd:python3
-	"
-
-PYTHON_PACKAGES=(python python3)
-PYTHON_VERSIONS=(2.7 3.7)
+PYTHON_PACKAGES=(python39 python310)
+PYTHON_VERSIONS=(3.9 3.10)
 for i in "${!PYTHON_PACKAGES[@]}"; do
 	pythonPackage=${PYTHON_PACKAGES[i]}
 	pythonVersion=${PYTHON_VERSIONS[$i]}
+
 	eval "PROVIDES_${pythonPackage}=\"
 		${portName}_$pythonPackage = $portVersion
 		\""
@@ -44,7 +35,15 @@ for i in "${!PYTHON_PACKAGES[@]}"; do
 		haiku
 		cmd:python$pythonVersion
 		\""
+
+	BUILD_REQUIRES+="
+		setuptools_$pythonPackage
+		"
+	BUILD_PREREQUIRES+="
+		cmd:python$pythonVersion
+		"
 done
+
 
 BUILD()
 {
@@ -61,6 +60,7 @@ BUILD()
 	done
 }
 
+
 INSTALL()
 {
 	for i in "${!PYTHON_PACKAGES[@]}"; do
@@ -71,8 +71,10 @@ INSTALL()
 
 		python=python$pythonVersion
 		installLocation=$prefix/lib/$python/vendor-packages/
+
 		export PYTHONPATH=$installLocation
 		mkdir -p "$installLocation"
+
 		$python setup.py install \
 			--root=/ --prefix="$prefix"
 
