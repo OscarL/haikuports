@@ -1,0 +1,86 @@
+SUMMARY="Readline as a Python extension module"
+DESCRIPTION="The standard Python readline extension statically linked against the \
+GNU readline library, providing readline support to Python on platforms without it."
+HOMEPAGE="https://github.com/ludwigschwardt/python-gnureadline"
+COPYRIGHT="?"
+LICENSE="GNU GPL v3"
+REVISION="1"
+SOURCE_URI="https://pypi.io/packages/source/g/gnureadline/gnureadline-$portVersion.tar.gz"
+CHECKSUM_SHA256="4262a6aa356ab22ef642f43a7f94eb42a72d6f0c532edb4e8c6b933f573056d2"
+
+ARCHITECTURES="all !x86_gcc2"
+SECONDARY_ARCHITECTURES="x86"
+
+PROVIDES="
+	$portName = $portVersion
+	"
+REQUIRES="
+	haiku$secondaryArchSuffix
+	"
+
+BUILD_REQUIRES="
+	haiku${secondaryArchSuffix}_devel
+	"
+
+BUILD_PREREQUIRES="
+	cmd:awk
+	cmd:gcc$secondaryArchSuffix
+	cmd:make
+	cmd:patch
+	"
+
+PYTHON_PACKAGES=(python39 python310)
+PYTHON_VERSIONS=(3.9 3.10)
+for i in "${!PYTHON_PACKAGES[@]}"; do
+	pythonPackage=${PYTHON_PACKAGES[i]}
+	pythonVersion=${PYTHON_VERSIONS[$i]}
+
+	eval "PROVIDES_${pythonPackage}=\"
+		${portName}_$pythonPackage = $portVersion
+		\""
+
+	if [ "$targetArchitecture" = x86_gcc2 ]; then
+		eval "PROVIDES_$pythonPackage+=\"
+			gnureadline_$pythonPackage = $portVersion
+			\""
+	fi
+
+	eval "REQUIRES_$pythonPackage=\"
+		haiku$secondaryArchSuffix
+		cmd:python$pythonVersion
+		lib:libncurses$secondaryArchSuffix
+		\""
+	BUILD_REQUIRES+="
+		build_$pythonPackage
+		installer_$pythonPackage
+		setuptools_$pythonPackage
+		wheel_$pythonPackage
+		devel:libncurses$secondaryArchSuffix
+		"
+	BUILD_PREREQUIRES+="
+		cmd:awk
+		cmd:make
+		cmd:patch
+		cmd:python$pythonVersion
+		"
+done
+
+INSTALL()
+{
+	# Without this, builds for 3.10+ fail (as their pyconfig.h has "WITH_EDITLINE 1")
+	sed -i -e "s|#ifdef WITH_EDITLINE|#ifdef _WITH_EDITLINE|" Modules/3.x/readline.c
+
+	for i in "${!PYTHON_PACKAGES[@]}"; do
+		python=python${PYTHON_VERSIONS[$i]}
+
+		# Without this, "installer" (see below) was erroring out when building for multiple Python
+		# versions (tested w/ 3.9/3.10). Strange, as similar recipes have no issue with that line.
+		rm -f dist/*.whl
+
+		$python -m build --wheel --skip-dependency-check --no-isolation
+		$python -m installer -p $prefix dist/*.whl
+
+		packageEntries ${PYTHON_PACKAGES[i]} \
+			$prefix/lib/python*
+	done
+}
