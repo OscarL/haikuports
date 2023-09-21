@@ -1,0 +1,84 @@
+SUMMARY="Async HTTP client/server framework (asyncio)"
+DESCRIPTION="* Supports both client and server side of HTTP protocol.
+* Supports both client and server Web-Sockets out-of-the-box and avoids Callback Hell.
+* Provides Web-server with middlewares and pluggable routing."
+HOMEPAGE="https://github.com/aio-libs/aiohttp"
+COPYRIGHT="aio-libs contributors"
+LICENSE="Apache v2"
+REVISION="1"
+SOURCE_URI="https://pypi.org/packages/source/a/aiohttp/aiohttp-$portVersion.tar.gz"
+CHECKSUM_SHA256="b9552ec52cc147dbf1944ac7ac98af7602e51ea2dcd076ed194ca3c0d1c7d0bc"
+
+ARCHITECTURES="all !x86_gcc2"
+SECONDARY_ARCHITECTURES="x86"
+
+PROVIDES="
+	$portName = $portVersion
+	"
+REQUIRES="
+	haiku$secondaryArchSuffix
+	"
+
+BUILD_REQUIRES="
+	haiku${secondaryArchSuffix}_devel
+	"
+
+PYTHON_VERSIONS=(3.10)
+
+for i in "${!PYTHON_VERSIONS[@]}"; do
+	pythonVersion=${PYTHON_VERSIONS[$i]}
+	pythonPackage=python${pythonVersion//.}
+
+	eval "PROVIDES_$pythonPackage=\"
+		${portName}_$pythonPackage = $portVersion
+		\""
+
+	if [ "$targetArchitecture" = x86_gcc2 ]; then
+		eval "PROVIDES_$pythonPackage+=\"
+			aiohttp_$pythonPackage = $portVersion
+			\""
+	fi
+
+	eval "REQUIRES_$pythonPackage=\"
+		haiku$secondaryArchSuffix
+		aiosignal_$pythonPackage >= 1.1.2
+		attrs_$pythonPackage >= 21.2.0
+		asynctest_$pythonPackage
+		async_timeout_$pythonPackage >= 4.0 # < 5.0 , only for Python < 3.11
+		charset_normalizer_$pythonPackage
+		cchardet_$pythonPackage # notice the "c"chardet
+		frozenlist_$pythonPackage >= 1.3.1
+		multidict_$pythonPackage >= 4.5 # < 7.0
+		yarl_$pythonPackage >= 1.8 # < 2.0
+		cmd:python$pythonVersion
+		\""
+
+	BUILD_REQUIRES+="
+		build_$pythonPackage
+		installer_$pythonPackage
+		setuptools_$pythonPackage
+		wheel_$pythonPackage
+		"
+	BUILD_PREREQUIRES+="
+		cmd:gcc$secondaryArchSuffix
+		cmd:python$pythonVersion
+		"
+done
+
+INSTALL()
+{
+	for i in "${!PYTHON_VERSIONS[@]}"; do
+		pythonVersion=${PYTHON_VERSIONS[$i]}
+		pythonPackage=python${pythonVersion//.}
+
+		python=python$pythonVersion
+
+		rm -rf dist
+
+		$python -m build --wheel --skip-dependency-check --no-isolation
+		$python -m installer --p $prefix dist/*.whl
+
+		packageEntries $pythonPackage \
+			$prefix/lib/python*
+	done
+}
