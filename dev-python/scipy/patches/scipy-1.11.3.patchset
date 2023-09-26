@@ -1,37 +1,37 @@
-From b6e0d70785f85e4a8b9ab61b37f684ad0eca4d28 Mon Sep 17 00:00:00 2001
+From df2d4f90a2639563ba8639cb90123b74f8a3701f Mon Sep 17 00:00:00 2001
 From: Aleksei Gerasimov <aleksei.gerasimov@vutbr.cz>
 Date: Thu, 15 Oct 2020 14:13:11 +0200
 Subject: disable ndimage
 
 
 diff --git a/scipy/setup.py b/scipy/setup.py
-index 3bcdd48..b3ede6f 100644
+index 622b057..2c466ae 100644
 --- a/scipy/setup.py
 +++ b/scipy/setup.py
-@@ -21,7 +21,7 @@ def configuration(parent_package='',top_path=None):
+@@ -23,7 +23,7 @@ def configuration(parent_package='',top_path=None):
      config.add_subpackage('spatial')
      config.add_subpackage('special')
      config.add_subpackage('stats')
 -    config.add_subpackage('ndimage')
 +    #config.add_subpackage('ndimage')
      config.add_subpackage('_build_utils')
-     config.add_subpackage('_lib')
      config.make_config_py()
+     return config
 -- 
-2.30.2
+2.42.0
 
 
-From f9e25e090297e27de3395bab18f104c70358d9ec Mon Sep 17 00:00:00 2001
+From a1849f73ba83759b3a931447cc4a34406b042fe5 Mon Sep 17 00:00:00 2001
 From: begasus <begasus@gmail.com>
 Date: Mon, 24 May 2021 18:40:26 +0000
 Subject: Haiku doesn't use -pthread, use -lpthread instead
 
 
 diff --git a/scipy/fft/_pocketfft/setup.py b/scipy/fft/_pocketfft/setup.py
-index 7e44565..3b0ead2 100644
+index c0413db..a8d1253 100644
 --- a/scipy/fft/_pocketfft/setup.py
 +++ b/scipy/fft/_pocketfft/setup.py
-@@ -15,9 +15,9 @@ def pre_build_hook(build_ext, ext):
+@@ -14,9 +14,9 @@ def pre_build_hook(build_ext, ext):
                                     'int main(int argc, char **argv) {}')
          if has_pthreads:
              ext.define_macros.append(('POCKETFFT_PTHREADS', None))
@@ -45,31 +45,32 @@ index 7e44565..3b0ead2 100644
                  raise RuntimeError("Build failed: System has pthreads header "
                                     "but could not compile with -pthread option")
 -- 
-2.30.2
+2.42.0
 
-From 0450b42c56cb1ed5d80a81447a766a4cfa757e63 Mon Sep 17 00:00:00 2001
+
+From 11ce10ea67187ade2dce481dae1728704f9815fb Mon Sep 17 00:00:00 2001
 From: Aleksei Gerasimov <aleksei.gerasimov@vutbr.cz>
 Date: Tue, 24 Aug 2021 15:19:52 +0200
 Subject: comment out ndimage import. Only one function (_threshold_mgc_map) is
  directly affected.
 
 
-diff --git a/scipy/stats/stats.py b/scipy/stats/stats.py
-index 2b7dac8..c460637 100644
---- a/scipy/stats/stats.py
-+++ b/scipy/stats/stats.py
-@@ -172,7 +172,7 @@ import numpy as np
- from numpy import array, asarray, ma
+diff --git a/scipy/stats/_stats_py.py b/scipy/stats/_stats_py.py
+index 94e42ab..bde2fa0 100644
+--- a/scipy/stats/_stats_py.py
++++ b/scipy/stats/_stats_py.py
+@@ -37,7 +37,7 @@ from numpy.lib import NumpyVersion
+ from numpy.testing import suppress_warnings
  
  from scipy.spatial.distance import cdist
--from scipy.ndimage import measurements
-+#from scipy.ndimage import measurements
- from scipy._lib._util import (_lazywhere, check_random_state, MapWrapper,
-                               rng_integers, float_factorial)
- import scipy.special as special
-@@ -5208,32 +5208,33 @@ def _threshold_mgc_map(stat_mgc_map, samp_size):
-     sig_connect : ndarray
+-from scipy.ndimage import _measurements
++#from scipy.ndimage import _measurements
+ from scipy._lib._util import (check_random_state, MapWrapper, _get_nan,
+                               rng_integers, _rename_parameter, _contains_nan)
+ 
+@@ -6572,32 +6572,33 @@ def _threshold_mgc_map(stat_mgc_map, samp_size):
          A binary matrix with 1's indicating the significant region.
+ 
      """
 -    m, n = stat_mgc_map.shape
 -
@@ -81,13 +82,13 @@ index 2b7dac8..c460637 100644
 -    threshold = distributions.beta.ppf(per_sig, threshold, threshold) * 2 - 1
 -
 -    # the global scale at is the statistic calculated at maximial nearest
--    # neighbors. Threshold is the maximium on the global and local scales
+-    # neighbors. Threshold is the maximum on the global and local scales
 -    threshold = max(threshold, stat_mgc_map[m - 1][n - 1])
 -
 -    # find the largest connected component of significant correlations
 -    sig_connect = stat_mgc_map > threshold
 -    if np.sum(sig_connect) > 0:
--        sig_connect, _ = measurements.label(sig_connect)
+-        sig_connect, _ = _measurements.label(sig_connect)
 -        _, label_counts = np.unique(sig_connect, return_counts=True)
 -
 -        # skip the first element in label_counts, as it is count(zeros)
@@ -97,7 +98,6 @@ index 2b7dac8..c460637 100644
 -        sig_connect = np.array([[False]])
 -
 -    return sig_connect
-+    raise ImportError("Haiku's package of scipy does not contain ndimage module")
 +#    m, n = stat_mgc_map.shape
 +#
 +#    # 0.02 is simply an empirical threshold, this can be set to 0.01 or 0.05
@@ -108,13 +108,13 @@ index 2b7dac8..c460637 100644
 +#    threshold = distributions.beta.ppf(per_sig, threshold, threshold) * 2 - 1
 +#
 +#    # the global scale at is the statistic calculated at maximial nearest
-+#    # neighbors. Threshold is the maximium on the global and local scales
++#    # neighbors. Threshold is the maximum on the global and local scales
 +#    threshold = max(threshold, stat_mgc_map[m - 1][n - 1])
 +#
 +#    # find the largest connected component of significant correlations
 +#    sig_connect = stat_mgc_map > threshold
 +#    if np.sum(sig_connect) > 0:
-+#        sig_connect, _ = measurements.label(sig_connect)
++#        sig_connect, _ = _measurements.label(sig_connect)
 +#        _, label_counts = np.unique(sig_connect, return_counts=True)
 +#
 +#        # skip the first element in label_counts, as it is count(zeros)
@@ -124,8 +124,10 @@ index 2b7dac8..c460637 100644
 +#        sig_connect = np.array([[False]])
 +#
 +#    return sig_connect
++    raise ImportError("Haiku's package of scipy does not contain ndimage module")
  
  
  def _smooth_mgc_map(sig_connect, stat_mgc_map):
 -- 
-2.30.2
+2.42.0
+
