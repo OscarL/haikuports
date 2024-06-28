@@ -1,0 +1,430 @@
+From a7b2fae1a5d058138b2bb30444ad50eb053a7b12 Mon Sep 17 00:00:00 2001
+From: Leorize <alaviss@users.noreply.github.com>
+Date: Tue, 9 Jan 2018 13:26:14 +0700
+Subject: Introduce MANDOC_DB_DIR
+
+This allow the separation of mandoc.db from man paths. Note that this
+causes all database related operation to be done in MANDOC_DB_DIR.
+
+OSes such as Haiku use have a package management system that
+mark certain folders as read-only (in this case, man directory). This
+allows mandocdb to work in such situation.
+
+diff --git a/configure b/configure
+index 5cf4e08..61a4586 100755
+--- a/configure
++++ b/configure
+@@ -110,6 +110,7 @@ INCLUDEDIR=
+ LIBDIR=
+ MANDIR=
+ READ_ALLOWED_PATH=
++DBDIR=
+ 
+ WWWPREFIX="/var/www"
+ HTDOCDIR=
+@@ -464,6 +465,7 @@ echo "#define MANPATH_DEFAULT \"${MANPATH_DEFAULT}\""
+ echo "#define OSENUM ${OSENUM}"
+ [ -n "${OSNAME}" ] && echo "#define OSNAME \"${OSNAME}\""
+ [ -n "${UTF8_LOCALE}" ] && echo "#define UTF8_LOCALE \"${UTF8_LOCALE}\""
++[ -n "${DBDIR}" ] && echo "#define MANDOC_DB_DIR \"${DBDIR}\""
+ [ -n "${READ_ALLOWED_PATH}" ] \
+ 	&& echo "#define READ_ALLOWED_PATH \"${READ_ALLOWED_PATH}\""
+ [ ${HAVE_ATTRIBUTE} -eq 0 ] && echo "#define __attribute__(x)"
+diff --git a/mandocdb.c b/mandocdb.c
+index a3360fe..84083eb 100644
+--- a/mandocdb.c
++++ b/mandocdb.c
+@@ -36,6 +36,7 @@
+ #else
+ #include "compat_fts.h"
+ #endif
++#include <libgen.h>
+ #include <limits.h>
+ #if HAVE_SANDBOX_INIT
+ #include <sandbox.h>
+@@ -172,6 +173,7 @@ static	int	 render_string(char **, size_t *);
+ static	void	 say(const char *, const char *, ...)
+ 			__attribute__((__format__ (__printf__, 2, 3)));
+ static	int	 set_basedir(const char *, int);
++static	int	 set_dbpath(void);
+ static	int	 treescan(void);
+ static	size_t	 utf8(unsigned int, char [7]);
+ 
+@@ -185,6 +187,12 @@ static	int		 exitcode; /* to be returned by main */
+ static	enum op		 op; /* operational mode */
+ static	char		 basedir[PATH_MAX]; /* current base directory */
+ static	size_t		 basedir_len; /* strlen(basedir) */
++/* path to mandoc.db */
++#ifndef MANDOC_DB_DIR
++static	const	char		 dbpath[] = MANDOC_DB;
++#else
++static	char		 dbpath[PATH_MAX + NAME_MAX] = MANDOC_DB_DIR;
++#endif
+ static	struct mpage	*mpage_head; /* list of distinct manual pages */
+ static	struct ohash	 mpages; /* table of distinct manual pages */
+ static	struct ohash	 mlinks; /* table of directory entries */
+@@ -439,10 +447,12 @@ mandocdb(int argc, char *argv[])
+ 		 * Most of these deal with a specific directory.
+ 		 * Jump into that directory first.
+ 		 */
+-		if (op != OP_TEST && set_basedir(path_arg, 1) == 0)
++		if (OP_TEST != op && 0 == set_basedir(path_arg, 1) &&
++		    0 == set_dbpath())
++
+ 			goto out;
+ 
+-		dba = nodb ? dba_new(128) : dba_read(MANDOC_DB);
++		dba = nodb ? dba_new(128) : dba_read(dbpath);
+ 		if (dba != NULL) {
+ 			/*
+ 			 * The existing database is usable.  Process
+@@ -510,6 +520,8 @@ mandocdb(int argc, char *argv[])
+ 
+ 			if (set_basedir(conf.manpath.paths[j], argc > 0) == 0)
+ 				continue;
++			if ( ! set_dbpath())
++				continue;
+ 			if (treescan() == 0)
+ 				continue;
+ 			dba = dba_new(128);
+@@ -638,8 +650,10 @@ treescan(void)
+ 		 * stored directory data and handling the filename.
+ 		 */
+ 		case FTS_F:
++#ifndef MANDOC_DB_DIR
+ 			if ( ! strcmp(path, MANDOC_DB))
+ 				continue;
++#endif
+ 			if ( ! use_all && ff->fts_level < 2) {
+ 				if (warnings)
+ 					say(path, "Extraneous file");
+@@ -2207,6 +2221,16 @@ dbwrite(struct dba *dba)
+ 	off_t		 i;
+ 	int		 fd1, fd2;
+ 
++#ifndef MANDOC_DB_DIR
++	const char	 dbnew[] = MANDOC_DB "~";
++#else
++	char		 dbnew[PATH_MAX + NAME_MAX];
++	char		 dbcpy[PATH_MAX + NAME_MAX];
++	char		 dbdir[PATH_MAX];
++	pid_t child;
++	int status;
++#endif
++
+ 	/*
+ 	 * Do not write empty databases, and delete existing ones
+ 	 * when makewhatis -u causes them to become empty.
+@@ -2214,8 +2238,8 @@ dbwrite(struct dba *dba)
+ 
+ 	dba_array_start(dba->pages);
+ 	if (dba_array_next(dba->pages) == NULL) {
+-		if (unlink(MANDOC_DB) == -1 && errno != ENOENT)
+-			say(MANDOC_DB, "&unlink");
++		if (unlink(dbpath) == -1 && errno != ENOENT)
++			say(dbpath, "&unlink");
+ 		return;
+ 	}
+ 
+@@ -2224,11 +2248,48 @@ dbwrite(struct dba *dba)
+ 	 * then atomically move it into place.
+ 	 */
+ 
+-	if (dba_write(MANDOC_DB "~", dba) != -1) {
+-		if (rename(MANDOC_DB "~", MANDOC_DB) == -1) {
++#ifdef MANDOC_DB_DIR
++	if (strlcpy(dbnew, dbpath, sizeof(dbnew)) >= sizeof(dbnew)) {
++		exitcode = (int)MANDOCLEVEL_SYSERR;
++		say("", "%s: &strlcpy", dbpath);
++		return;
++	}
++
++	if (strlcat(dbnew, "~", sizeof(dbnew)) >= sizeof(dbnew)) {
++		exitcode = (int)MANDOCLEVEL_SYSERR;
++		say("", "%s: &strlcat", dbpath);
++		return;
++	}
++
++	/* dirname(3) is allowed to change the input string */
++	(void)strlcpy(dbcpy, dbnew, sizeof(dbcpy));
++	(void)strlcpy(dbdir, dirname(dbcpy), sizeof(dbdir));
++	switch (child = fork()) {
++	case -1:
++		exitcode = (int)MANDOCLEVEL_SYSERR;
++		say("", "&fork mkdir");
++		return;
++	case 0:
++		execlp("mkdir", "mkdir", "-p", dbdir, (char *)NULL);
++		say("", "&exec mkdir");
++		exit((int)MANDOCLEVEL_SYSERR);
++	default:
++		break;
++	}
++	if (waitpid(child, &status, 0) == -1) {
++		exitcode = (int)MANDOCLEVEL_SYSERR;
++		say("", "&wait mkdir");
++	} else if (WIFSIGNALED(status) || WEXITSTATUS(status)) {
++		exitcode = (int)MANDOCLEVEL_SYSERR;
++		say("", "%s: Cannot create database directory", dbdir);
++	}
++#endif
++
++	if (dba_write(dbnew, dba) != -1) {
++		if (rename(dbnew, dbpath) == -1) {
+ 			exitcode = (int)MANDOCLEVEL_SYSERR;
+-			say(MANDOC_DB, "&rename");
+-			unlink(MANDOC_DB "~");
++			say(dbpath, "&rename");
++			unlink(dbnew);
+ 		}
+ 		return;
+ 	}
+@@ -2286,7 +2347,7 @@ dbwrite(struct dba *dba)
+ 
+ err:
+ 	exitcode = (int)MANDOCLEVEL_SYSERR;
+-	say(MANDOC_DB, "Data changed, but cannot replace database");
++	say("", "Data changed, but cannot replace database: %s", dbpath);
+ 
+ out:
+ 	if (cp1 != MAP_FAILED)
+@@ -2386,6 +2447,27 @@ set_basedir(const char *targetdir, int report_baddir)
+ 	return 1;
+ }
+ 
++static int
++set_dbpath(void)
++{
++#ifndef MANDOC_DB_DIR
++	return 1;
++#else
++	const size_t dbpathsize = sizeof(dbpath);
++	if (strlcat(dbpath, basedir, dbpathsize) >= dbpathsize) {
++		exitcode = (int)MANDOCLEVEL_SYSERR;
++		say("", "&%s: strlcat", MANDOC_DB_DIR);
++		return 0;
++	}
++	if (strlcat(dbpath, MANDOC_DB, dbpathsize) >= dbpathsize) {
++		exitcode = (int)MANDOCLEVEL_SYSERR;
++		say("", "&%s: strlcat", MANDOC_DB_DIR);
++		return 0;
++	}
++	return 1;
++#endif
++}
++
+ #ifdef READ_ALLOWED_PATH
+ static int
+ read_allowed(const char *candidate)
+diff --git a/mansearch.c b/mansearch.c
+index 59a3577..57228f0 100644
+--- a/mansearch.c
++++ b/mansearch.c
+@@ -87,6 +87,11 @@ mansearch(const struct mansearch *search,
+ 		struct manpage **res, size_t *sz)
+ {
+ 	char		 buf[PATH_MAX];
++#ifndef MANDOC_DB_DIR
++	const char	 dbpath[] = MANDOC_DB;
++#else
++	char		 dbpath[PATH_MAX + NAME_MAX] = MANDOC_DB_DIR;
++#endif
+ 	struct dbm_res	*rp;
+ 	struct expr	*e;
+ 	struct dbm_page	*page;
+@@ -154,9 +159,22 @@ mansearch(const struct mansearch *search,
+ 		}
+ 		chdir_status = 1;
+ 
+-		if (dbm_open(MANDOC_DB) == -1) {
++#ifdef MANDOC_DB_DIR
++		if (strlcat(dbpath, paths->paths[i],
++			    sizeof(dbpath)) >= sizeof(dbpath)) {
++			warn("%s: &strlcat", paths->paths[i]);
++			continue;
++		}
++		if (strlcat(dbpath, "/" MANDOC_DB,
++			    sizeof(dbpath)) >= sizeof(dbpath)) {
++			warn("%s: &strlcat", paths->paths[i]);
++			continue;
++		}
++#endif
++
++		if (dbm_open(dbpath) == -1) {
+ 			if (errno != ENOENT)
+-				warn("%s/%s", paths->paths[i], MANDOC_DB);
++				warn("%s", dbpath);
+ 			continue;
+ 		}
+ 
+-- 
+2.45.1
+
+
+From ea7572ff61adafbf6db630163cc110309fb64d98 Mon Sep 17 00:00:00 2001
+From: Leorize <alaviss@users.noreply.github.com>
+Date: Tue, 9 Jan 2018 15:02:31 +0700
+Subject: configure: add SYSCONFDIR
+
+This allow changing the default /etc/man.conf path to SYSCONFDIR/man.conf
+
+diff --git a/configure b/configure
+index 61a4586..79263bd 100755
+--- a/configure
++++ b/configure
+@@ -111,6 +111,7 @@ LIBDIR=
+ MANDIR=
+ READ_ALLOWED_PATH=
+ DBDIR=
++SYSCONFDIR="/etc"
+ 
+ WWWPREFIX="/var/www"
+ HTDOCDIR=
+@@ -459,7 +460,7 @@ __HEREDOC__
+ [ ${HAVE_GETLINE} -eq 0 ] && echo "#include <stdio.h>"
+ 
+ echo
+-echo "#define MAN_CONF_FILE \"/etc/${MANM_MANCONF}\""
++echo "#define MAN_CONF_FILE \"${SYSCONFDIR}/${MANM_MANCONF}\""
+ echo "#define MANPATH_BASE \"${MANPATH_BASE}\""
+ echo "#define MANPATH_DEFAULT \"${MANPATH_DEFAULT}\""
+ echo "#define OSENUM ${OSENUM}"
+@@ -652,6 +653,7 @@ BIN_FROM_SBIN	= ${BIN_FROM_SBIN}
+ INCLUDEDIR	= ${INCLUDEDIR}
+ LIBDIR		= ${LIBDIR}
+ MANDIR		= ${MANDIR}
++SYSCONFDIR	= ${SYSCONFDIR}
+ WWWPREFIX	= ${WWWPREFIX}
+ HTDOCDIR	= ${HTDOCDIR}
+ CGIBINDIR	= ${CGIBINDIR}
+-- 
+2.45.1
+
+
+From e1fbc121b77624841cabd04f587302699d2c823a Mon Sep 17 00:00:00 2001
+From: Leorize <alaviss@users.noreply.github.com>
+Date: Tue, 30 Jan 2018 19:44:52 +0700
+Subject: manpath: dynamically populate paths on Haiku
+
+
+diff --git a/configure b/configure
+index 79263bd..e1e698d 100755
+--- a/configure
++++ b/configure
+@@ -461,9 +461,14 @@ __HEREDOC__
+ 
+ echo
+ echo "#define MAN_CONF_FILE \"${SYSCONFDIR}/${MANM_MANCONF}\""
+-echo "#define MANPATH_BASE \"${MANPATH_BASE}\""
+-echo "#define MANPATH_DEFAULT \"${MANPATH_DEFAULT}\""
+ echo "#define OSENUM ${OSENUM}"
++cat << __HEREDOC__
++#ifndef __HAIKU__
++#define MANPATH_BASE "${MANPATH_BASE}"
++#define MANPATH_DEFAULT "${MANPATH_DEFAULT}"
++#endif
++
++__HEREDOC__
+ [ -n "${OSNAME}" ] && echo "#define OSNAME \"${OSNAME}\""
+ [ -n "${UTF8_LOCALE}" ] && echo "#define UTF8_LOCALE \"${UTF8_LOCALE}\""
+ [ -n "${DBDIR}" ] && echo "#define MANDOC_DB_DIR \"${DBDIR}\""
+diff --git a/manpath.c b/manpath.c
+index 255d748..87cf57d 100644
+--- a/manpath.c
++++ b/manpath.c
+@@ -27,6 +27,10 @@
+ #include <stdlib.h>
+ #include <string.h>
+ 
++#ifdef __HAIKU__
++#include <FindDirectory.h>
++#endif
++
+ #include "mandoc_aux.h"
+ #include "mandoc.h"
+ #include "manconf.h"
+@@ -93,8 +97,26 @@ manconf_parse(struct manconf *conf, const char *file,
+ void
+ manpath_base(struct manpaths *dirs)
+ {
++#ifndef __HAIKU__
+ 	char path_base[] = MANPATH_BASE;
+ 	manpath_parseline(dirs, path_base, '\0');
++#else
++	char path[PATH_MAX + NAME_MAX];
++	int i;
++
++	const directory_which dw[] = {
++		B_USER_DOCUMENTATION_DIRECTORY,
++		B_SYSTEM_DOCUMENTATION_DIRECTORY
++	};
++
++	for (i = 0; i < sizeof(dw) / sizeof(directory_which); ++i) {
++		if (find_directory(dw[i], -1, 0, path, sizeof(path)) != B_OK)
++			continue;
++		if (strlcat(path, "/man", sizeof(path)) >= sizeof(path))
++			continue;
++		manpath_add(dirs, path, 0);
++	}
++#endif
+ }
+ 
+ /*
+@@ -164,7 +186,20 @@ static void
+ manconf_file(struct manconf *conf, const char *file)
+ {
+ 	const char *const toks[] = { "manpath", "output" };
++#ifndef __HAIKU__
+ 	char manpath_default[] = MANPATH_DEFAULT;
++#else
++	int ignore_default = 0;
++	int i;
++	char path[PATH_MAX + NAME_MAX];
++
++	const directory_which dw[] = {
++		B_USER_NONPACKAGED_DOCUMENTATION_DIRECTORY,
++		B_USER_DOCUMENTATION_DIRECTORY,
++		B_SYSTEM_NONPACKAGED_DOCUMENTATION_DIRECTORY,
++		B_SYSTEM_DOCUMENTATION_DIRECTORY
++	};
++#endif
+ 
+ 	FILE		*stream;
+ 	char		*line, *cp, *ep;
+@@ -202,7 +237,11 @@ manconf_file(struct manconf *conf, const char *file)
+ 		switch (tok) {
+ 		case 0:  /* manpath */
+ 			manpath_add(&conf->manpath, cp, '\0');
++#ifndef __HAIKU__
+ 			*manpath_default = '\0';
++#else
++			ignore_default = 1;
++#endif
+ 			break;
+ 		case 1:  /* output */
+ 			manconf_output(&conf->output, cp, 1);
+@@ -215,8 +254,21 @@ manconf_file(struct manconf *conf, const char *file)
+ 	fclose(stream);
+ 
+ out:
++#ifndef __HAIKU__	
+ 	if (*manpath_default != '\0')
+ 		manpath_parseline(&conf->manpath, manpath_default, '\0');
++#else
++	if (ignore_default)
++		return;
++
++	for (i = 0; i < sizeof(dw) / sizeof(directory_which); ++i) {
++		if (find_directory(dw[i], -1, 0, path, sizeof(path)) != B_OK)
++			continue;
++		if (strlcat(path, "/man", sizeof(path)) >= sizeof(path))
++			continue;
++		manpath_add(&conf->manpath, path, 0);
++	}
++#endif
+ }
+ 
+ int
+-- 
+2.45.1
+
