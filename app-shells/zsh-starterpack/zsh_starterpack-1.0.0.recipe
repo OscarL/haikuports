@@ -1,0 +1,63 @@
+SUMMARY="Small set of pre-configured plugins to improve your Zsh experience"
+DESCRIPTION="This package installs, and enables usage of, the following Zsh plugins:
+
+- zsh-autosuggestions
+- zsh-syntax-highlighting
+- zsh-shift-select
+
+The first two combined offer (colorful) suggestions in a similar way as the 'fish' shell (or
+'clink' on Windows).
+
+The last one offers intuitive text selection on the prompt line, by using Shift+left/right
+arrows keys."
+HOMEPAGE="https://github.com/haikuports/haikuports/"
+COPYRIGHT="-"
+LICENSE="
+	BSD (3-clause)
+	MIT
+	"
+REVISION="1"
+SOURCE_URI="https://github.com/zsh-users/zsh-autosuggestions/archive/refs/tags/v0.7.0.tar.gz"
+CHECKSUM_SHA256="ccd97fe9d7250b634683c651ef8a2fe3513ea917d1b491e8696a2a352b714f08"
+SOURCE_URI_2="https://github.com/zsh-users/zsh-syntax-highlighting/archive/refs/tags/0.8.0.tar.gz"
+CHECKSUM_SHA256_2="5981c19ebaab027e356fe1ee5284f7a021b89d4405cc53dc84b476c3aee9cc32"
+SOURCE_URI_3="https://github.com/jirutka/zsh-shift-select/archive/refs/tags/v0.1.1.tar.gz"
+CHECKSUM_SHA256_3="dbcc640d2a778782ebe203543f3652326e6b08681388de42fb5d7add2ae5e647"
+
+SOURCE_DIR="zsh-autosuggestions-0.7.0"
+SOURCE_DIR_2="zsh-syntax-highlighting-0.8.0"
+SOURCE_DIR_3="zsh-shift-select-0.1.1"
+
+ARCHITECTURES="any"
+
+PROVIDES="
+	$portName
+	"
+REQUIRES="
+	haiku
+	cmd:zsh >= 5
+	"
+BUILD_PREREQUIRES="
+	cmd:make
+	"
+
+INSTALL()
+{
+	zshPlugsDir="$dataDir/zsh/plugins"
+#	mkdir -p $zshPlugsDir
+	install -m 0755 -d "$zshPlugsDir"
+
+	# Autosuggestions
+	install -m 644 -t $zshPlugsDir $sourceDir/zsh-autosuggestions.plugin.zsh
+	install -m 644 -t $zshPlugsDir $sourceDir/zsh-autosuggestions.zsh
+
+	# Syntax-Highlight
+	cd $sourceDir2
+	make install SHARE_DIR="$zshPlugsDir/zsh-syntax-highlighting" DOC_DIR="$zshPlugsDir/zsh-syntax-highlighting/doc"
+	install -m 644 -t $zshPlugsDir/zsh-syntax-highlighting $sourceDir2/zsh-syntax-highlighting.plugin.zsh
+#	install -m 644 -t $zshPlugsDir/zsh-syntax-highlighting $sourceDir2/zsh-syntax-highlighting.zsh
+	cd ..
+
+	# Shift-Select
+	install -m 644 -t $zshPlugsDir $sourceDir3/zsh-shift-select.plugin.zsh
+}
