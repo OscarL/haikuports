@@ -118,9 +118,11 @@ if [ "$packageTests" = "yes" ]; then
 		"
 fi
 
+optimizedBuild="no"
+
 BUILD()
 {
-	autoreconf -fi
+#	autoreconf -fi
 
 	# From ./configure:
 	# "compiler flags are generated in two sets, BASECFLAGS and OPT.  OPT is just
@@ -131,12 +133,19 @@ BUILD()
 	# Not exporting OPT ends up using:
 	#	"-fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall"
 	# and using OPT="" means the build ends up being "-O0".
-	export OPT="-O3 -Wall"
+	export OPT="-fno-strict-overflow -Wsign-compare -DNDEBUG -O0 -Wall"
 
+	if [ "$optimizedBuild" = "yes" ]; then
+		maybeEnableOptimizations"--enable-optimizations"
+	else
+		maybeEnableOptimizations=""
+	fi
+
+: '
 	runConfigure --omit-dirs binDir,includeDir ./configure \
 		--bindir=$commandBinDir \
 		--includedir=$developDir/headers \
-		--enable-optimizations \
+		$maybeEnableOptimizations \
 		--enable-shared \
 		--with-ensurepip=no \
 		--with-readline=editline \
@@ -144,11 +153,15 @@ BUILD()
 		--with-system-libmpdec=no \
 		--with-tzpath=$dataDir/zoneinfo \
 		--without-static-libpython
+'
 		# --with-lto # Issues with enabling this flag:
 		#	- Is too CPU intensive (at least 3 times slower build).
 		#	- Seems libpython3.nn.so.1.0 is left with debug input in it (30% final package size increase).
 		#	- No noticeable speed difference, at least on the "pystone.py" syntetic benchmark.
 		#	ToDo: CFLAGS_NODIST and LDFLAGS_NODIST end up with "-g" in them when using "--with-lto". Investigate.
+
+	# Fastest way to fix the build (current Haiku bluetooth support doesn't merrits much more for now).
+	sed -i 's|#define HAVE_BLUETOOTH_BLUETOOTH_H 1|/* #undef HAVE_BLUETOOTH_BLUETOOTH_H */|' pyconfig.h
 
 	# Uncomment when doing repeated builds (for testing different flags/options).
 	# echo "[.recipe] Cleaning before rebuild:" && make clean && rm -f python
@@ -165,7 +178,11 @@ BUILD()
 	#
 	# Not using multiple jobs for make solves both the warnings and the possible error.
 	# make $jobArgs
-	make -j 1
+	if [ "$optimizedBuild" = "yes" ]; then
+		make -j 1
+	else
+		make $jobArgs
+	fi
 }
 
 
