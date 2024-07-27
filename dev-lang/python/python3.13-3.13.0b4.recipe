@@ -12,8 +12,8 @@ HOMEPAGE="https://www.python.org"
 LICENSE="Python"
 COPYRIGHT="1990-2024 Python Software Foundation"
 REVISION="1"
-SOURCE_URI="https://www.python.org/ftp/python/${portVersion%b1}/Python-${portVersion}.tar.xz"
-CHECKSUM_SHA256="ba716ac56b039b545ad4a90ce586a57aa97869364553746ef2445728ceec198e"
+SOURCE_URI="https://www.python.org/ftp/python/${portVersion%b4}/Python-${portVersion}.tar.xz"
+CHECKSUM_SHA256="b2aa557c3c875233abdaf1b124284e5d50f6bb238d62a8b55f12dc92cea1953f"
 SOURCE_DIR="Python-${portVersion}"
 
 pyShortVer="${portVersion%.*}"
@@ -42,7 +42,6 @@ enableTkinter=false
 
 PROVIDES="
 	python$pyShortVer$secondaryArchSuffix = $pyVersionCompat
-#	cmd:idle$pyShortVer = $pyVersionCompat # This needs tkinter, and libtcl/libtk added to REQUIRES
 	cmd:pydoc$pyShortVer = $pyVersionCompat
 	cmd:python$pyShortVer = $pyVersionCompat
 	cmd:python${pyShortVer}_config = $pyVersionCompat
@@ -81,10 +80,13 @@ BUILD_REQUIRES="
 	"
 
 if [ "$enableTkinter" = true ]; then
+	PROVIDES+="
+		cmd:idle$pyShortVer = $pyVersionCompat
+		"
 	BUILD_REQUIRES+="
 		devel:libtclstub8.6$secondaryArchSuffix
 		devel:libtk8.6$secondaryArchSuffix
-	"
+		"
 fi
 
 BUILD_PREREQUIRES="
@@ -191,12 +193,6 @@ INSTALL()
 		sed -i -e 's,headers/x86,headers,' $developLibDir/pkgconfig/python*.pc
 	fi
 
-	## Provide symlink to libpython3.nn.so
-	# Having a "version-suffixless" libpython3.nn.so can help software detect the different
-	# Python versions available for runtime loading (via dlopen()). Usually those only search for
-	# libpython3.nn.so under $libDir.
-	ln -sr $libDir/libpython${pyShortVer}.so.1.0 $libDir/libpython${pyShortVer}.so
-
 	mkdir -p $prefix/lib/python$pyShortVer/vendor-packages
 	echo 'This directory contains packaged python modules.' \
 		>$prefix/lib/python$pyShortVer/vendor-packages/README
@@ -251,7 +247,7 @@ TEST()
 		# Use this to get same test order on different runs (actual value not important).
 		--randseed 7858065
 
- 		# Print the names of the 10 slowest tests.
+		# Print the names of the 10 slowest tests.
 		--slowest
 
 		# Possibly useful?
@@ -263,15 +259,20 @@ TEST()
 		# "resources: all,-audio,-gui,-largefile" instead.
 		#
 		# Let's be explicit to avoid surprises:
-		-u none,curses,tzdata
+		-unone,curses,tzdata
+	)
+
+	local tests_to_exclude=(
+		# distutils is deprecated, and will be removed on 3.12.
+		-x test_distutils
 
 		# The following tests invoke the crash dialog, and unless your configure
 		# debug_server default action to "kill" or "report", they will hang waiting for
 		# user input. See comment above TEST().
 		-x test_faulthandler
 		-x test_futures # from test_asyncio. Crashes: Exception (Segment violation)
-		-x test_subprocess	# tends to hang.
-		-x test_threading	# tends to hang.
+		-x test_subprocess # tends to hang.
+		-x test_threading # tends to hang.
 
 		# Many of the tests hang/stall. We have two options:
 		#
@@ -279,6 +280,7 @@ TEST()
 		# 2- Set a TIMEOUT (eg: --timeout=300).
 		#
 		# Option 1: Works, but requires manual identification/mainteinance.
+		#
 		# Option 2: Doesn't requires maintaining a list of stalling tests, but:
 		# at the end of the test run it causes:
 		# - "unmounting failed: Device/File/Resource Busy" errors, as there are
@@ -318,7 +320,7 @@ TEST()
 		-x test_sslproto # Exception on Exception handler.
 		-x test_streams
 		-x test_unix_events
-	#	-i TestThreadedServer # in test_asyncio.functioonal
+	#	-i TestThreadedServer # in test_asyncio.functional
 
 		# These not always hang/stall, but they do it enough to warrant skipping for now.
 		-x test_imaplib
@@ -340,7 +342,7 @@ TEST()
 		# 3.12.1
 		-x test_queue
 
-		# Hang on nightlies:
+		# 3.11.8 / 3.12.2 (hang on nightlies, at least)
 		-x test_httplib
 		-x test_httpservers
 		-x test_logging
@@ -367,6 +369,20 @@ TEST()
 		# need to find how to avoid re-running the failing tests
 	)
 
+	local tests_that_fail=(
+	)
+
 	local -x LOGNAME=buildbot # this skips tests_tools/test_freeze, copied from Gentoo's ebuild
-	make $jobArgs test EXTRATESTOPTS="${test_options[*]}"
+
+	# This runs the full test suite (minus the tests that we explicitly exclude).
+	make $jobArgs test EXTRATESTOPTS="${test_options[*]} ${tests_to_exclude[*]}"
+	# Use this instead, to only run the tests that fail:
+	# make $jobArgs test EXTRATESTOPTS="${test_options[*]} ${tests_that_fail[*]}"
+
+	# Occasionally, some test fails seemingly due to the racy nature of tempfile.mktemp().
+	# Even the help for that function says to NOT use it, but some tests still do.
+	#
+	# If you find some strange "æ" suffix on temp dirnames, ej:
+	#    "cwd: /sources/Python-3.10.12/build/test_python_10324æ"
+	# That's due to usages of os_helper.FS_NONASCII.
 }
