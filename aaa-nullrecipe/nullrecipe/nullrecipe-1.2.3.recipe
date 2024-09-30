@@ -1,0 +1,95 @@
+SUMMARY="Emtpy recipe to test things"
+DESCRIPTION="Lout is a document formatting system designed and implemented by Jeffrey Kingston at \
+the Basser Department of Computer Science, University of Sydney, Australia.
+
+The system reads a high-level description of a document similar in style to LaTeX and produces a \
+PostScript file which can be printed on most laser printers and graphic display devices.
+Plain text output is also available, PDF output is limited but working (e.g. no graphics).
+Lout is inherently multilingual. Adding new languages is easy.
+
+The Lout package for Haiku includes includes documentation in PDF format, so people new to Lout \
+have an easier time learning how to use it. The files will be located under:
+
+/boot/system/documentation/packages/$portName
+
+* slides.pdf serves as a short introduction to Lout's capabilities.
+* user.pdf offers a very complete documentation. \"Appendix A\" contains a nice quick-reference guide!
+* expert.pdf and design.pdf will serve well the more advanced users.
+
+When working with Lout files under Haiku, using the Pe editor can be convenient, as it includes \
+special supports for them (syntax coloring, content navigation, etc)."
+HOMEPAGE="http://localhost"
+COPYRIGHT="2023"
+LICENSE="Public Domain"
+REVISION="1"
+###############################################################################
+# Keep these and the download folder as-is.
+SOURCE_URI="http://localhost/nullrecipe-1.2.3.zip#noarchive"
+CHECKSUM_SHA256="0a99929c784e820384d1f1a3ad999f260189b514a47a549338fa023599e5f34c"
+###############################################################################
+
+ARCHITECTURES="any"
+SECONDARY_ARCHITECTURES="x86"
+
+PROVIDES="
+	$portName = $portVersion
+	"
+REQUIRES="
+	"
+
+BUILD_REQUIRES="
+	"
+
+###############################################################################
+# Do your experiments here:
+
+BUILD()
+{
+	printf "\n\n\n###############################################################################\n"
+	echo "# From BUILD():"
+	echo ""
+
+	echo "haikuVersion = $haikuVersion"
+
+	echo "\$DESCRIPTION = $DESCRIPTION"
+
+	PYTHON_PACKAGES=(python39 python310)
+	PYTHON_VERSIONS=(3.9 3.10)
+	for i in "${!PYTHON_PACKAGES[@]}"; do
+		pythonPackage=${PYTHON_PACKAGES[i]}
+		pythonVersion=${PYTHON_VERSIONS[$i]}
+
+		echo "\$pythonPackage = $pythonPackage"
+		echo "\$pythonVersion = $pythonVersion"
+		echo "\${PYTHON_PACKAGES[i]} = ${PYTHON_PACKAGES[i]}"
+		echo "\${PYTHON_PACKAGES[$i]} = ${PYTHON_PACKAGES[$i]}"
+		echo "\$i = $i"
+	done
+
+	echo ""
+	printf "###############################################################################\n\n\n\n"
+}
+
+INSTALL()
+{
+	printf "\n\n\n###############################################################################\n"
+	echo "# From INSTALL():"
+	echo ""
+	echo "\$prefix = $prefix"
+	echo "\$binDir = $binDir"
+	echo ""
+	echo "\$prefix/bin/ = $prefix/bin/"
+	echo ""
+	echo "\$dataDir = $dataDir"
+	echo "\$libDir = $libDir"
+	echo "\$manDir = $manDir"
+	echo "\$commandBinDir = $commandBinDir"
+	echo "\$relativeBinDir = $relativeBinDir"
+	echo "\$relativeLibDir = $relativeLibDir"
+	echo "\$buildArchitecture = $buildArchitecture"
+	echo "\$targetArchitecture = $targetArchitecture"
+	echo "\$effectiveTargetArchitecture = $effectiveTargetArchitecture"
+	echo "\$secondaryArchSuffix = $secondaryArchSuffix"
+	echo ""
+	printf "###############################################################################\n\n\n\n"
+}
