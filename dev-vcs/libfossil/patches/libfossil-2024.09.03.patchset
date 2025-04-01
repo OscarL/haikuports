@@ -1,0 +1,175 @@
+From 350c23d012c93b7404c3f45fff7ef461303e1a26 Mon Sep 17 00:00:00 2001
+From: Oscar Lesta <oscar.lesta@gmail.com>
+Date: Tue, 1 Apr 2025 09:53:30 -0300
+Subject: Fix compilation errors in Haiku.
+
+* Haiku's getopt is from glibc.
+* do not define HAVE_REALLOCARRAY, as it is not present on beta5
+  (nightlies have it already).
+
+diff --git a/client/fnc/fnc.c b/client/fnc/fnc.c
+index 8b7586a..fe1e923 100644
+--- a/client/fnc/fnc.c
++++ b/client/fnc/fnc.c
+@@ -1003,7 +1003,7 @@ main(int argc, char **argv)
+ 
+ 	argc -= optind;
+ 	argv += optind;
+-#ifdef __linux__
++#if defined(__linux__) || defined(__HAIKU__)
+ 	optind = 0;
+ #else
+ 	optind = 1;
+diff --git a/client/fnc/fnc_compat.h b/client/fnc/fnc_compat.h
+index 000de0f..e516f7f 100644
+--- a/client/fnc/fnc_compat.h
++++ b/client/fnc/fnc_compat.h
+@@ -48,7 +48,7 @@
+ #endif  /* __has_include */
+ #endif  /* __linux__ */
+ 
+-#if !defined(__linux__) && !defined(__APPLE__)
++#if !defined(__linux__) && !defined(__APPLE__) && !defined(__HAIKU__)
+ #define HAVE_REALLOCARRAY
+ #define HAVE_BSD_STRING
+ #define HAVE_STRTONUM
+@@ -72,6 +72,14 @@
+ #endif  /* __MAC_OS_X_VERSION_MAX_ALLOWED */
+ #endif  /* __APPLE__ */
+ 
++#if defined(__HAIKU__)
++#ifndef _DEFAULT_SOURCE
++#define _DEFAULT_SOURCE
++#endif
++#define HAVE_BSD_STRING
++#define HAVE_STRTONUM
++#endif  /* __HAIKU__ */
++
+ #ifndef __predict_true
+ #ifdef __has_builtin
+ #if __has_builtin(__builtin_expect)
+-- 
+2.48.1
+
+
+From d721e139f3619a368e7036561b291cedde2ed6ce Mon Sep 17 00:00:00 2001
+From: Oscar Lesta <oscar.lesta@gmail.com>
+Date: Tue, 1 Apr 2025 09:56:43 -0300
+Subject: Fix linking errors on Haiku.
+
+reallocarray.c (needed on beta5 only) downloaded from:
+
+https://fnc.bsdbox.org/raw/81e1ef444ea37d3c9750acd171502f1b6368347dba1a5035b3f3bc5d788b3289?at=reallocarray.c
+
+diff --git a/client/fnc/reallocarray.c b/client/fnc/reallocarray.c
+new file mode 100644
+index 0000000..4001e52
+--- /dev/null
++++ b/client/fnc/reallocarray.c
+@@ -0,0 +1,75 @@
++/*
++ * Copyright (c) 2023 Mark Jamsek <mark@jamsek.com>
++ *
++ * Permission to use, copy, modify, and distribute this software for any
++ * purpose with or without fee is hereby granted, provided that the above
++ * copyright notice and this permission notice appear in all copies.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
++ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
++ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
++ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
++ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
++ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
++ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
++ */
++
++#include "fnc_compat.h"
++
++#include <errno.h>
++#include <limits.h>
++#include <stdint.h>
++#include <stdlib.h>
++
++#ifndef HAVE_REALLOCARRAY
++
++#ifndef LONG_BIT
++/*
++ * LONG_BIT should be defined in limits.h; if not, compute with the
++ * following macro courtesy of Hallvard B Furuseth via comp.lang.c:
++ * http://groups.google.com/group/comp.lang.c/msg/e998153ef07ff04b
++ */
++#define IMAX_BITS(_m)	((_m) / ((_m) % 255 + 1) / 255 % 255 * 8 + 7 - 86 / \
++			    ((_m) % 255 + 12))
++
++#define LONG_BIT	IMAX_BITS(ULONG_MAX)
++#endif  /* LONG_BIT */
++
++#if LONG_BIT > 32
++typedef __uint128_t	big_uint_t;
++# else
++typedef uint64_t	big_uint_t;
++#endif  /* LONG_BIT > 32 */
++
++#ifdef __has_builtin
++#if __has_builtin(__builtin_mul_overflow)
++#define mul_overflow(_n, _m, _ret)	__builtin_mul_overflow(_n, _m, _ret)
++#endif
++#endif
++
++#ifndef mul_overflow
++static inline int
++mul_overflow(unsigned long n, unsigned long m, unsigned long *ret)
++{
++	big_uint_t product = (big_uint_t)n * (big_uint_t)m;
++
++	*ret = (unsigned long)product;
++
++	return (product >> LONG_BIT) != 0;
++}
++#endif  /* mul_overflow */
++
++void *
++reallocarray(void *ptr, size_t n, size_t sz)
++{
++	unsigned long product;
++
++	if (__predict_false(mul_overflow(n, sz, &product)) != 0) {
++		errno = ENOMEM;
++		return NULL;
++	}
++
++	return realloc(ptr, product);
++}
++
++#endif  /* HAVE_REALLOCARRAY */
+diff --git a/make-client-fnc.make.in b/make-client-fnc.make.in
+index 2220e28..aeef7fa 100644
+--- a/make-client-fnc.make.in
++++ b/make-client-fnc.make.in
+@@ -20,13 +20,22 @@ PLATFORM := $(shell sh -c 'uname 2>/dev/null || echo Unknown')
+ ifneq ($(filter $(PLATFORM),Darwin),)
+   FNC_LDFLAGS += -liconv
+ endif
+-FNC_LDFLAGS += $(LIB_CURSES) -lutil -lpthread
++ifneq ($(filter $(PLATFORM),Haiku),)
++  FNC_LDFLAGS += $(LIB_CURSES) -lbsd
++else
++  FNC_LDFLAGS += $(LIB_CURSES) -lutil -lpthread
++endif
++
+ # This is needed for Mac builds, else they don't see the
+ # wide-char curses APIs:
+ fnc.CPPFLAGS += -D_XOPEN_SOURCE_EXTENDED
+ 
+ DFNC := $(DIR.fnc)/fnc
++ifneq ($(filter $(PLATFORM),Haiku),)
++	$(DFNC).BIN.OBJECTS += $(DFNC).o $(DIR.fnc)/diff.o $(DIR.fnc)/error.o $(DIR.fnc)/reallocarray.o
++else
+ $(DFNC).BIN.OBJECTS += $(DFNC).o $(DIR.fnc)/diff.o $(DIR.fnc)/error.o
++endif
+ $($(DFNC).BIN.OBJECTS): $(libfossil.h) $(FNC.MAKEFILE)
+ $(DFNC).BIN.LDFLAGS := $(FNC_LDFLAGS)
+ $(eval $(call ShakeNMake.CALL.RULES.BIN,$(DFNC)))
+-- 
+2.48.1
+

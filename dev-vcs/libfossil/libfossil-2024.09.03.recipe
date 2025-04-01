@@ -1,0 +1,145 @@
+SUMMARY="Unofficial Fossil SCM Library API"
+DESCRIPTION="The (Unofficial) Fossil SCM Library API."
+HOMEPAGE="https://fossil.wanderinghorse.net/r/libfossil"
+COPYRIGHT="2013-2021 Stephan Beal, the Libfossil authors and contributors."
+LICENSE="BSD (2-clause)"
+REVISION="1"
+fossilHash="404f376c0eeebaa1"
+SOURCE_URI="https://fossil.wanderinghorse.net/r/libfossil/tarball/$fossilHash/libfossil-$fossilHash.tar.gz"
+CHECKSUM_SHA256="3b4c940590e924303d05a351d70b830cd854ac109a258824f61017b13a2d74d1"
+SOURCE_DIR="$portName-$fossilHash"
+PATCHES="libfossil-$portVersion.patchset"
+
+ARCHITECTURES="all !x86_gcc2"
+SECONDARY_ARCHITECTURES="x86"
+
+libVersion="$portVersion"
+libVersionCompat="$libVersion compat >= ${libVersion%%.*}"
+
+PROVIDES="
+	libfossil$secondaryArchSuffix = $portVersion
+	lib:libfossil$secondaryArchSuffix = $libVersionCompat
+	"
+REQUIRES="
+	haiku$secondaryArchSuffix
+	lib:libncursesw$secondaryArchSuffix
+	lib:libz$secondaryArchSuffix
+	"
+
+PROVIDES_devel="
+	libfossil${secondaryArchSuffix}_devel = $portVersion
+	devel:libfossil$secondaryArchSuffix = $libVersionCompat
+	"
+REQUIRES_devel="
+	libfossil$secondaryArchSuffix == $portVersion base
+	"
+
+BUILD_REQUIRES="
+	haiku${secondaryArchSuffix}_devel
+	devel:libncursesw$secondaryArchSuffix
+	devel:libz$secondaryArchSuffix
+	"
+BUILD_PREREQUIRES="
+	cmd:gcc$secondaryArchSuffix
+	cmd:make
+	cmd:tclsh
+	"
+
+PROVIDES_client="
+	libfossil_client$secondaryArchSuffix = $portVersion
+	cmd:fnc
+	"
+PROVIDES_tools="
+	libfossil_tools$secondaryArchSuffix = $portVersion
+	cmd:f_acat
+	cmd:f_add
+	cmd:f_adiff
+	cmd:f_annotate
+	cmd:f_aparse
+	cmd:f_ci
+	cmd:f_ciwoco
+	cmd:f_co
+	cmd:f_config
+	cmd:f_delta
+	cmd:f_extract
+	cmd:f_ls
+	cmd:f_merge
+	cmd:f_new
+	cmd:f_open
+	cmd:f_parseparty
+	cmd:f_query
+	cmd:f_rebuild
+	cmd:f_rename
+	cmd:f_repostat
+	cmd:f_resolve
+	cmd:f_revert
+	cmd:f_rm
+	cmd:f_status
+	cmd:f_tag
+	cmd:f_timeline
+	cmd:f_update
+	cmd:f_vdiff
+	cmd:f_wiki
+	cmd:f_zip
+	"
+
+REQUIRES_client="
+	$REQUIRES
+	libfossil$secondaryArchSuffix == $portVersion base
+	lib:libncursesw$secondaryArchSuffix
+	"
+
+REQUIRES_tools="
+	$REQUIRES
+	libfossil$secondaryArchSuffix == $portVersion base
+	"
+
+defineDebugInfoPackage libfossil$secondaryArchSuffix \
+	$libDir/libfossil.so
+
+
+BUILD()
+{
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=$prefix \
+		--sysconfdir=$settingsDir/etc \
+		--mandir=$manDir \
+		--localstatedir=/var \
+		--no-debug \
+		--disable-static
+#		--c++
+#		--loud
+#		--no-fnc
+
+	#make $jobArgs CFLAGS=-D_DEFAULT_SOURCE
+	make $jobArgs
+}
+
+
+INSTALL()
+{
+	make install
+
+	prepareInstalledDevelLib libfossil
+	# no pkg-config files
+	#fixPkgconfig
+
+	# --mandir set in ./configure is not being used, it seems.
+	mkdir -p $manDir/man1
+	mv $prefix/share/man/man1/fnc.1 $manDir/man1
+	rm -rf $prefix/share
+	packageEntries client \
+		$prefix/bin/fnc \
+		$manDir
+
+	packageEntries tools \
+		$prefix/bin
+
+	install -Dvm644 include/*.h -t $developDir/headers
+	install -Dvm644 include/fossil-scm/*.h -t $developDir/headers/fossil-scm/
+
+	packageEntries devel \
+		$developDir
+}
