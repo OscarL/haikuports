@@ -94,9 +94,9 @@ REQUIRES_tools="
 	libfossil$secondaryArchSuffix == $portVersion base
 	"
 
-defineDebugInfoPackage libfossil$secondaryArchSuffix \
-	$libDir/libfossil.so
-
+# Disable for now, as we're using --no-debug in BUILD
+#defineDebugInfoPackage libfossil$secondaryArchSuffix \
+#	$libDir/libfossil.so
 
 BUILD()
 {
