@@ -45,10 +45,17 @@ BUILD_PREREQUIRES="
 	cmd:tclsh
 	"
 
+PACKAGE_NAME_client="fnc"
 PROVIDES_client="
-	libfossil_client$secondaryArchSuffix = $portVersion
+	$PACKAGE_NAME_client$secondaryArchSuffix = $portVersion
 	cmd:fnc
 	"
+REQUIRES_client="
+	$REQUIRES
+	libfossil$secondaryArchSuffix == $portVersion base
+	lib:libncursesw$secondaryArchSuffix
+	"
+
 PROVIDES_tools="
 	libfossil_tools$secondaryArchSuffix = $portVersion
 	cmd:f_acat
@@ -82,13 +89,6 @@ PROVIDES_tools="
 	cmd:f_wiki
 	cmd:f_zip
 	"
-
-REQUIRES_client="
-	$REQUIRES
-	libfossil$secondaryArchSuffix == $portVersion base
-	lib:libncursesw$secondaryArchSuffix
-	"
-
 REQUIRES_tools="
 	$REQUIRES
 	libfossil$secondaryArchSuffix == $portVersion base
