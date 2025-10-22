@@ -1,0 +1,86 @@
+SUMMARY="FUSE filesystem to mount squashfs archives"
+DESCRIPTION="Squashfuse lets you mount SquashFS archives in user-space. It supports almost
+all features of the SquashFS format, yet is still fast and memory-efficient. So
+that everyone can use it, squashfuse supports many different operating systems
+and is available under a permissing license.
+
+SquashFS is an efficiently compressed, read-only storage format. Support for it
+has been built into the Linux kernel since 2009. It is very common on Live CDs
+and embedded Linux distributions."
+HOMEPAGE="https://github.com/vasi/squashfuse"
+COPYRIGHT="2012 Dave Vasilevsky"
+LICENSE="GNU GPL v2"
+REVISION="1"
+SOURCE_URI="https://github.com/vasi/squashfuse/releases/download/$portVersion/squashfuse-$portVersion.tar.gz"
+CHECKSUM_SHA256="7b18a58c40a3161b5c329ae925b72336b5316941f906b446b8ed6c5a90989f8c"
+SOURCE_FILENAME="$portBaseName-$portVersion.tar.gz"
+SOURCE_DIR="$portBaseName-$portVersion"
+
+PATCHES="$portBaseName-$portVersion.patchset"
+
+ARCHITECTURES="all !x86_gcc2"
+SECONDARY_ARCHITECTURES="x86"
+
+PROVIDES="
+	$portName = $portVersion
+	"
+REQUIRES="
+	haiku$secondaryArchSuffix
+	userland_fs
+	lib:liblz4$secondaryArchSuffix
+	lib:liblzma$secondaryArchSuffix
+	lib:liblzo2$secondaryArchSuffix
+	lib:libz$secondaryArchSuffix
+	lib:libzstd$secondaryArchSuffix
+	"
+
+BUILD_REQUIRES="
+	haiku${secondaryArchSuffix}_devel
+	userland_fs
+	devel:liblz4$secondaryArchSuffix
+	devel:liblzma$secondaryArchSuffix
+	devel:liblzo2$secondaryArchSuffix
+	devel:libz$secondaryArchSuffix
+	devel:libzstd$secondaryArchSuffix
+	"
+BUILD_PREREQUIRES="
+	# Only needed to build from git, not from release tarball... or when patching the .ac files.
+	cmd:autoconf # >= 2.60
+	cmd:automake # >= 1.11
+	cmd:libtoolize$secondaryArchSuffix
+	cmd:gcc$secondaryArchSuffix
+	cmd:make
+	cmd:pkg_config$secondaryArchSuffix
+	"
+
+BUILD()
+{
+	autoreconf
+
+	export CFLAGS="-O2 -D_FILE_OFFSET_BITS=64"
+#	export CFLAGS="-O2 -D_FILE_OFFSET_BITS=64 -DB_USE_POSITIVE_POSIX_ERRORS"
+#	export LIBS="-lposix_error_mapper"
+
+	runConfigure --omit-dirs binDir ./configure \
+		--bindir=$prefix/add-ons/userlandfs \
+		--disable-dependency-tracking \
+		--enable-shared=no \
+		--enable-static=no \
+		--disable-demo
+#		--disable-low-level
+#		--disable-high-level
+
+	make $jobArgs
+}
+
+INSTALL()
+{
+	# This installs the fuse drivers, man pages, libraries, headers, etc.
+	# make $jobArgs install
+	# rm $libDir/libsquashfuse*.la
+
+	# Let's just package the userlandfs addons instead:
+	mkdir -p $prefix/add-ons/userlandfs
+	cp squashfuse $prefix/add-ons/userlandfs
+	cp squashfuse_ll $prefix/add-ons/userlandfs
+}
