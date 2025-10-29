@@ -1,0 +1,54 @@
+SUMMARY="The Polipo caching HTTP proxy"
+DESCRIPTION="Polipo is single-threaded, non blocking caching web proxy that has
+very modest resource needs."
+HOMEPAGE="http://www.pps.jussieu.fr/~jch/software/polipo/"
+COPYRIGHT="2003–2006 by Juliusz Chroboczek"
+LICENSE="MIT"
+REVISION="1"
+SOURCE_URI="https://github.com/jech/polipo/archive/refs/tags/polipo-$portVersion.tar.gz"
+CHECKSUM_SHA256="de0afeeaa47df776420e59b69e9a78f68e8a7bc4a46b739772e1d91119ed2405"
+SOURCE_DIR="polipo-polipo-$portVersion"
+PATCHES="polipo-$portVersion.patchset"
+
+ARCHITECTURES="all !x86_gcc2"
+SECONDARY_ARCHITECTURES="x86"
+
+PROVIDES="
+	$portName = $portVersion
+	cmd:polipo = $portVersion
+	"
+REQUIRES="
+	haiku${secondaryArchSuffix}
+	"
+
+BUILD_PREREQUIRES="
+	haiku${secondaryArchSuffix}_devel
+	cmd:gcc$secondaryArchSuffix
+	cmd:make
+	cmd:makeinfo
+	"
+
+PATCH()
+{
+	sed -i "s|PREFIX = /usr/local|PREFIX = $prefix|" Makefile
+	sed -i "s|MANDIR = \$(PREFIX)/man|MANDIR = $manDir|" Makefile
+	sed -i "s|INFODIR = \$(PREFIX)/info|INFODIR = $documentationDir/info|" Makefile
+	sed -i "s|LOCAL_ROOT = /usr/share/polipo/www|LOCAL_ROOT = $dataDir/polipo/www|" Makefile
+#	sed -i "s|DISK_CACHE_ROOT = /var/cache/polipo||" Makefile
+}
+
+
+BUILD()
+{
+	make LDLIBS="-lnetwork -lposix_error_mapper" all
+}
+
+INSTALL()
+{
+	make install
+
+	# Should perhaps copy: "config.sample"
+	# ToDo: add autostart as in tor?
+
+	# ToDo: needs a post-install script to "mkdir -p /var/cache/polipo"
+}
