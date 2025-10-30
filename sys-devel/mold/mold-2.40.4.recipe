@@ -1,0 +1,127 @@
+SUMMARY="A Modern Linker"
+DESCRIPTION="mold is a faster drop-in replacement for existing Unix linkers.
+
+It is several times quicker than the LLVM lld linker, the second-fastest open-source linker.
+
+mold aims to enhance developer productivity by minimizing build time, particularly in rapid \
+debug-edit-rebuild cycles."
+HOMEPAGE="https://github.com/rui314/mold"
+COPYRIGHT="2023 Rui Ueyama"
+LICENSE="MIT"
+REVISION="1"
+SOURCE_URI="https://github.com/rui314/mold/archive/refs/tags/v$portVersion.tar.gz"
+SOURCE_FILENAME="$portBaseName-$portVersion.tar.gz"
+CHECKSUM_SHA256="69414c702ec1084e1fa8ca16da24f167f549e5e11e9ecd5d70a8dcda6f08c249"
+
+PATCHES="$portBaseName-$portVersion.patchset"
+
+ARCHITECTURES="all !x86_gcc2"
+SECONDARY_ARCHITECTURES="x86"
+
+# On x86_gcc2 we don't want to install the commands in bin/<arch>/, but in bin/.
+#commandBinDir=$binDir
+#if [ "$targetArchitecture" = x86_gcc2 ]; then
+#	commandBinDir=$prefix/bin
+#fi
+
+PROVIDES="
+	$portName = $portVersion
+	cmd:ld.mold$secondaryArchSuffix = $portVersion
+	cmd:mold$secondaryArchSuffix = $portVersion
+	"
+REQUIRES="
+	haiku$secondaryArchSuffix
+	lib:libblake3$secondaryArchSuffix
+	lib:libxxhash$secondaryArchSuffix
+#	lib:libtbb$secondaryArchSuffix
+	lib:libzstd$secondaryArchSuffix
+	lib:libz$secondaryArchSuffix
+	"
+
+BUILD_REQUIRES="
+	haiku${secondaryArchSuffix}_devel
+	devel:libblake3$secondaryArchSuffix
+	devel:libxxhash$secondaryArchSuffix
+#	devel:libtbb$secondaryArchSuffix
+	devel:libzstd$secondaryArchSuffix
+	devel:libz$secondaryArchSuffix
+	"
+BUILD_PREREQUIRES="
+	cmd:cmake
+	cmd:g++$secondaryArchSuffix
+	cmd:ld$secondaryArchSuffix
+	cmd:make
+	"
+
+# Some tests require QEMU
+TEST_REQUIRES="
+	cmd:ctest
+	cmd:lddtree	# used as 'lddtree -l' in place of 'ldd'
+	"
+
+BUILD()
+{
+	# Use the new system allocator on Haiku versions that have it.
+	maybeMiMalloc=
+	hrev=$(uname -v)
+	hrev=${hrev:4:5}
+	if [ $hrev -ge 57937 ]; then
+		maybeMiMalloc="-D MOLD_USE_MIMALLOC=OFF"
+	fi
+
+	cmake -B build -S . \
+		$cmakeDirArgs \
+		-D CMAKE_BUILD_TYPE=Release \
+		-D MOLD_LTO=OFF \
+		-D MOLD_USE_MOLD=OFF \
+		-D MOLD_ENABLE_QEMU_TESTS=OFF \
+		$maybeMiMalloc
+
+#		-D CMAKE_INSTALL_BINDIR=$commandBinDir \
+#		-D MOLD_USE_SYSTEM_MIMALLOC=ON \
+#		-D MOLD_USE_SYSTEM_TBB=ON \
+
+	# Enabling LTO (at least with GCC's ld) results in out of memory on my machines.
+
+	# Parallel builds require way too much RAM (8 GB not enough even for 3-cores, 2 *might* work?).
+	# On only one core (Phenom II 2.8 GHz), a full build (LTO disabled) takes around 2 hours.
+
+	cmake --build build # --parallel 2
+}
+
+INSTALL()
+{
+	cmake --install build
+}
+
+
+# For reference, first ever results (hrev59095, x86_64, VMware, non "--parallel" run):
+#
+# 27% tests passed, 312 tests failed out of 425
+# Total Test time (real) = 486.41 sec
+#
+# (had to manually kill one test that hang)
+
+# Second attempt, after a patch on commandline.cc (hrev59095, x86_64, VMware, "--parallel" run):
+#
+# 83% tests passed, 73 tests failed out of 425
+# Total Test time (real) = 745.10 sec
+
+# *** BEWARE *** 2 tests crash (calling abort()), so be sure to add a default action to debugger:
+# (on ~/config/settings/system/debug_server/settings:
+
+# executable_actions {
+#	/sources/mold-*/mold kill
+#}
+
+# crashing tests are: "x86_64-arch-x86_64-exception-mcmodel-large" and "x86_64-exception"
+# hanging test (pegs one core to 100%) is: "x86_64-mold-wrapper"
+
+
+# 83% tests passed, 72 tests failed out of 425
+# Total Test time (real) = 479.14 sec
+TEST()
+{
+	ctest --test-dir build # --parallel --output-on-failure
+#	ctest --test-dir build --rerun-failed --output-on-failure
+}
