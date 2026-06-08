@@ -1,0 +1,46 @@
+From 18c88d43abe53f8b4157a1d294690bf6ee874818 Mon Sep 17 00:00:00 2001
+From: Jerome Duval <jerome.duval@gmail.com>
+Date: Tue, 2 Feb 2021 09:13:05 +0100
+Subject: Haiku patch
+
+
+diff --git a/scintilla/include/Platform.h b/scintilla/include/Platform.h
+index 887ed4b..6370790 100644
+--- a/scintilla/include/Platform.h
++++ b/scintilla/include/Platform.h
+@@ -39,14 +39,15 @@
+ #undef PLAT_CURSES
+ #define PLAT_CURSES 1
+ 
+-#elif defined(__HAIKU__)
+-#undef PLAT_HAIKU
+-#define PLAT_HAIKU 1
+-
+ #elif defined(SCINTILLA_QT)
+ #undef PLAT_QT
+ #define PLAT_QT 1
+ 
++#if defined(__HAIKU__)
++#undef PLAT_QT_HAIKU
++#define PLAT_QT_HAIKU 1
++#endif
++
+ #include <Qsci/qsciglobal.h>
+ QT_BEGIN_NAMESPACE
+ class QPainter;
+diff --git a/scintilla/src/RunStyles.cpp b/scintilla/src/RunStyles.cpp
+index ad3084a..7dc68f4 100644
+--- a/scintilla/src/RunStyles.cpp
++++ b/scintilla/src/RunStyles.cpp
+@@ -308,7 +308,7 @@ void RunStyles<DISTANCE, STYLE>::Check() const {
+ 
+ template class Scintilla::RunStyles<int, int>;
+ template class Scintilla::RunStyles<int, char>;
+-#if (PTRDIFF_MAX != INT_MAX) || PLAT_HAIKU
++#if (PTRDIFF_MAX != INT_MAX) || PLAT_QT_HAIKU
+ template class Scintilla::RunStyles<ptrdiff_t, int>;
+ template class Scintilla::RunStyles<ptrdiff_t, char>;
+ #endif
+-- 
+2.52.0
+

@@ -1,0 +1,185 @@
+SUMMARY="A port to Qt of the Scintilla editing component"
+DESCRIPTION="As well as features found in standard text editing components, Scintilla includes \
+features especially useful when editing and debugging source code:
+
+* syntax styling with support for over 70 languages
+* error indicators
+* code completion
+* call tips
+* code folding
+* margins can contain markers like those used in debuggers to indicate breakpoints and the \
+current line.
+* recordable macros
+* multiple views
+* printing.
+
+QScintilla is a port or Scintilla to the Qt GUI toolkit from The Qt Company and runs on any \
+operating system supported by Qt (eg. Windows, Linux, macOS, iOS and Android).
+
+This, Haiku packaged, version of QScintilla works with Qt v6.
+
+QScintilla also includes language bindings for Python (requiring PyQt6).
+
+This version of QScintilla is based on Scintilla v3.10.1"
+HOMEPAGE="https://www.riverbankcomputing.com/software/qscintilla/"
+COPYRIGHT="Riverbank Computing Limited"
+LICENSE="GNU GPL v3"
+REVISION="1"
+SOURCE_URI="https://www.riverbankcomputing.com/static/Downloads/QScintilla/$portVersion/QScintilla_src-$portVersion.tar.gz"
+CHECKSUM_SHA256="dfe13c6acc9d85dfcba76ccc8061e71a223957a6c02f3c343b30a9d43a4cdd4d"
+SOURCE_DIR="QScintilla_src-$portVersion"
+PATCHES="$portBaseName-$portVersion.patchset"
+
+ARCHITECTURES="all !x86_gcc2"
+SECONDARY_ARCHITECTURES="x86"
+
+libVersion="15.2.1"
+libVersionCompat="$libVersion compat >= ${libVersion%%.*}"
+
+PROVIDES="
+	$portName = $portVersion
+	lib:libqscintilla2_qt6$secondaryArchSuffix = $libVersionCompat
+	"
+REQUIRES="
+	haiku$secondaryArchSuffix
+	lib:libGL$secondaryArchSuffix
+	lib:libQt6Core$secondaryArchSuffix
+#	lib:libQt6Designer$secondaryArchSuffix
+	lib:libQt6Gui$secondaryArchSuffix
+	lib:libQt6PrintSupport$secondaryArchSuffix
+	lib:libQt6Widgets$secondaryArchSuffix
+	"
+
+PROVIDES_devel="
+	${portName}_devel = $portVersion
+	devel:libqscintilla2_qt6$secondaryArchSuffix = $libVersionCompat
+	"
+REQUIRES_devel="
+	haiku${secondaryArchSuffix}_devel
+	$portName == $portVersion base
+	"
+
+pythonVersion=3.10
+pythonPackage=python${pythonVersion//.}
+
+eval "SUMMARY_$pythonPackage=\"Python bindings for QScintilla (PyQt6)"\"
+
+eval "PROVIDES_$pythonPackage=\"
+	${portName}_$pythonPackage = $portVersion
+	\""
+if [ "$targetArchitecture" = x86_gcc2 ]; then
+	eval "PROVIDES_$pythonPackage+=\"
+		${portBaseName}_$pythonPackage = $portVersion
+		\""
+fi
+
+eval "REQUIRES_$pythonPackage=\"
+	$portName == $portVersion base
+	pyqt6_$pythonPackage
+	\""
+
+
+BUILD_REQUIRES="
+	haiku${secondaryArchSuffix}_devel
+	installer_$pythonPackage	# to "INSTALL" the .whl file contents.
+	pyqt_builder_$pythonPackage
+	pyqt6_$pythonPackage
+	devel:libQt6Core$secondaryArchSuffix
+#	devel:libQt6Designer$secondaryArchSuffix
+	devel:libQt6Gui$secondaryArchSuffix
+	devel:libQt6PrintSupport$secondaryArchSuffix
+	devel:libQt6Widgets$secondaryArchSuffix
+	"
+BUILD_PREREQUIRES="
+	cmd:g++$secondaryArchSuffix
+	cmd:make
+	cmd:python$pythonVersion
+	cmd:sed
+	cmd:qmake6$secondaryArchSuffix
+	cmd:sip_wheel
+	"
+
+BUILD()
+{
+	# Build QScintilla proper:
+	pushd src
+    qmake6
+    make $jobArgs
+	popd
+
+	# Build the QScintilla plugin for Qt Designer.
+#	pushd designer
+#	qmake INCLUDEPATH+=../src QMAKE_LIBDIR+=../src
+#	make $jobArgs
+#	popd
+
+	# Build the Python bindings:
+
+	# This allows sip find the (freshly built) qscintilla lib, without having it installed.
+	export LIBRARY_PATH=$LIBRARY_PATH:$PWD/src/
+
+	pushd Python
+
+	cp pyproject-qt6.toml pyproject.toml
+
+	# when using sip-wheel, if given, --api-dir needs to be relative. Which means that on
+	# INSTALL we'll need to move the (QScintilla) ".api" files to the correct location
+	# ($dataDir/Qt6/qsci/api/).
+	# if not given, no .api file gets added.
+	local sipArgs=(
+		--jobs $jobs
+		--api-dir=.api	# (optional) dir for the PtQt6-QScintilla.api file.
+		# --pep484-pyi	# (optional) Type hinting files.
+
+		--qmake /bin/qmake6${secondaryArchSuffix/_/-}
+
+		--qsci-features-dir ../src/features
+		--qsci-include-dir ../src
+		--qsci-library-dir ../src
+	)
+
+	sip-wheel ${sipArgs[*]}
+
+	popd
+}
+
+
+INSTALL()
+{
+	pushd src
+	# ToDo: patch qmake6 so it doesn't hardcodes "/boot/system/" here?
+	sed -i -e 's|INSTALL_ROOT)/boot/system/|INSTALL_ROOT)/|g' Makefile
+	make INSTALL_ROOT=$prefix install
+	popd
+
+	# ToDo: if re-enabling this plugin, split this into a separate package,
+	# so plain qscitilla users apps can avoid requiring qt6_tools (for lib:libQt6Designer).
+#	pushd designer
+#	sed -i -e 's|INSTALL_ROOT)/boot/system/|INSTALL_ROOT)/|g' Makefile
+#	make INSTALL_ROOT=$prefix install
+#	popd
+
+	prepareInstalledDevelLibs \
+		libqscintilla2_qt6
+
+	packageEntries devel \
+		$developDir \
+		$dataDir/Qt6/mkspecs
+
+	# Install Python bindings.
+	python=python$pythonVersion
+	$python -m installer --p $prefix Python/pyqt6_qscintilla-$portVersion-cp310-abi3-haiku*_${effectiveTargetArchitecture}.whl
+
+	# Move PyQt6-QScintilla.api file (if exists) to the correct location.
+	maybeApiFile=
+	_fileName=$prefix/lib/$python/vendor-packages/.api/PyQt6-QScintilla.api
+	if test -e $_fileName; then
+		maybeApiFile=$dataDir/Qt6/qsci/api/PyQt6-QScintilla.api
+		mv $_fileName $maybeApiFile
+		rmdir $prefix/lib/$python/vendor-packages/.api/
+	fi
+
+	packageEntries $pythonPackage \
+		$prefix/lib/python* \
+		$maybeApiFile
+}
