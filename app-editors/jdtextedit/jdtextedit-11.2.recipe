@@ -1,0 +1,81 @@
+SUMMARY="An advanced text editor"
+DESCRIPTION="An advanced text editor, written in Python, with useful features:
+* Syntax highlighting
+* Code completion
+* Session restore
+* Code folding
+* Macros
+* External commands
+* Spell checker
+* Split view"
+HOMEPAGE="https://codeberg.org/JakobDev/jdTextEdit/"
+COPYRIGHT="2019-2021 JakobDev"
+LICENSE="GNU GPL v3"
+REVISION="1"
+SOURCE_URI="https://codeberg.org/JakobDev/jdTextEdit/archive/$portVersion.tar.gz"
+SOURCE_FILENAME="jdTextEdit-$portVersion.tar.gz"
+CHECKSUM_SHA256="fc66fa2058de33d3d0c1a0c0b6fe7e94a2572e11ac02165e15bee6c03e1206eb"
+SOURCE_DIR="jdtextedit"
+ADDITIONAL_FILES="
+	distribution.json
+	jdtextedit.rdef
+	"
+
+ARCHITECTURES="any"
+
+pythonVersion=3.10
+pythonPackage=python${pythonVersion//.}
+
+PROVIDES="
+	jdtextedit = $portVersion
+	app:jdTextEdit = $portVersion
+	"
+REQUIRES="
+	haiku
+	cmd:python$pythonVersion
+	chardet_python310
+	editorconfig_core_py_python310
+	jdtranslationhelper_python310
+	lxml_python310
+	pyenchant_python310
+	pyqt6_python310
+	pyqt6_sip_python310
+	qscintilla_qt6_python310
+	requests_python310
+	"
+
+BUILD_REQUIRES="
+	setuptools_python310
+	pyqt6_python310
+	wheel_python310
+	"
+
+BUILD_PREREQUIRES="
+	cmd:lrelease6 # secondaryArchSuffix?
+	"
+
+INSTALL()
+{
+	python=python$pythonVersion
+
+	# install.py calls "python -m pip", so let's make sure it can find it:
+	$python -m ensurepip --default-pip
+
+	$python install.py \
+		--yes \
+		--no-deps \
+		--prefix=$prefix \
+		--distribution-file=$portDir/additional-files/distribution.json
+
+	# Installation of translations and docs: will require either patching of install.py,
+	# and/or doing it "manually".
+
+	mkdir -p $appsDir
+	mv $prefix/bin/jdTextEdit $appsDir/jdTextEdit
+	settype -t application/x-vnd.Be-elfexecutable $appsDir/jdTextEdit
+
+	rc  $portDir/additional-files/jdtextedit.rdef
+	resattr -o $appsDir/jdTextEdit  $portDir/additional-files/jdtextedit.rsrc
+
+	addAppDeskbarSymlink $appsDir/jdTextEdit
+}
