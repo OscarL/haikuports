@@ -19,13 +19,13 @@ HOMEPAGE="https://www.python.org"
 LICENSE="Python"
 COPYRIGHT="1990-2026 Python Software Foundation"
 REVISION="1"
-SOURCE_URI="https://www.python.org/ftp/python/${portVersion%~a1}/Python-${portVersion/'~'/}.tar.xz"
-CHECKSUM_SHA256="dcaa9029436b723e33412c68ca17f0130be73058e47a3a7c049cb8cdf6034ee9"
+SOURCE_URI="https://www.python.org/ftp/python/${portVersion%~a2}/Python-${portVersion/'~'/}.tar.xz"
+CHECKSUM_SHA256="5fb6a0b8b7a70af2ee1386edcfb832e9636a5331b2bf0376a06cac33c43aa0d0"
 SOURCE_DIR="Python-${portVersion/'~'/}"
 
-pyShortVer="${portVersion%~a1}"
+pyShortVer="${portVersion%~a2}"
 pyShortVer="${portVersion%.*}"
-pyVersionCompat="${portVersion%~a1} compat >= $pyShortVer"
+pyVersionCompat="${portVersion%~a2} compat >= $pyShortVer"
 
 PATCHES="python$pyShortVer-$portVersion.patchset"
 
